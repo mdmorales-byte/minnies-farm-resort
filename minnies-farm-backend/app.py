@@ -49,6 +49,24 @@ def create_app():
     def health():
         return {"status": "ok", "resort": "Minnies Farm Resort"}, 200
 
+    @app.route("/api/seed-staff")
+    def seed_staff():
+        from models import User
+        existing = User.query.filter_by(email="staff@resort.com").first()
+        if existing:
+            existing.password = bcrypt.generate_password_hash("staff123").decode()
+            db.session.commit()
+            return {"status": "Staff password reset!"}, 200
+        new_staff = User(
+            name="Mick Daniel Morales",
+            email="staff@resort.com",
+            password=bcrypt.generate_password_hash("staff123").decode(),
+            role="staff"
+        )
+        db.session.add(new_staff)
+        db.session.commit()
+        return {"status": "Staff created!"}, 200
+
     with app.app_context():
         db.create_all()
 
