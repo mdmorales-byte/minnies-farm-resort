@@ -24,7 +24,7 @@ def create_app():
     app.config['MAIL_PORT'] = 587
     app.config['MAIL_USE_TLS'] = True
     app.config['MAIL_USERNAME'] = 'moralesmickdaniel7@gmail.com'
-    app.config['MAIL_PASSWORD'] = 'kigqkmkpukchnluj'
+    app.config['MAIL_PASSWORD'] = os.getenv('MAIL_PASSWORD')
     app.config['MAIL_DEFAULT_SENDER'] = ("Minnie's Farm Resort", 'moralesmickdaniel7@gmail.com')
 
     db.init_app(app)
