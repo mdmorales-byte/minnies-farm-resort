@@ -201,22 +201,25 @@ def forgot_password():
 
         reset_link = f"http://127.0.0.1:5500/minnies-farm-frontend/index.html?reset_token={token}"
 
-        msg = Message(
-            subject="Reset Your Password - Minnie's Farm Resort",
-            recipients=[email],
-            html=f"""
-            <div style="font-family: Arial, sans-serif; max-width: 500px; margin: 0 auto;">
-                <h2 style="color: #1a2e2a;">🌿 Minnie's Farm Resort</h2>
-                <p>Hi {user.name},</p>
-                <p>We received a request to reset your password. Click the button below:</p>
-                <a href="{reset_link}" style="display:inline-block;padding:12px 24px;background:#2d6a5f;color:white;text-decoration:none;border-radius:8px;margin:16px 0;">
-                    Reset My Password
-                </a>
-                <p style="color:#888;font-size:0.85rem;">This link expires in 1 hour. If you didn't request this, ignore this email.</p>
-            </div>
-            """
-        )
-        mail.send(msg)
+        try:
+            msg = Message(
+                subject="Reset Your Password - Minnie's Farm Resort",
+                recipients=[email],
+                html=f"""
+                <div style="font-family: Arial, sans-serif; max-width: 500px; margin: 0 auto;">
+                    <h2 style="color: #1a2e2a;">🌿 Minnie's Farm Resort</h2>
+                    <p>Hi {user.name},</p>
+                    <p>We received a request to reset your password. Click the button below:</p>
+                    <a href="{reset_link}" style="display:inline-block;padding:12px 24px;background:#2d6a5f;color:white;text-decoration:none;border-radius:8px;margin:16px 0;">
+                        Reset My Password
+                    </a>
+                    <p style="color:#888;font-size:0.85rem;">This link expires in 1 hour. If you didn't request this, ignore this email.</p>
+                </div>
+                """
+            )
+            mail.send(msg)
+        except Exception as e:
+            print(f"Password reset email sending failed: {e}")
 
     return jsonify({'message': 'If that email exists, a reset link has been sent.'}), 200
 
