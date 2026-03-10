@@ -47,7 +47,7 @@ class Room(db.Model):
     price_per_night  = db.Column(db.Numeric(10,2),nullable=False)
     description      = db.Column(db.Text)
     amenities        = db.Column(db.Text)          # comma-separated string
-    image_url        = db.Column(db.String(255))
+    image_url        = db.Column(db.String(1000))
     image_url_2      = db.Column(db.String(500))
     image_url_3      = db.Column(db.String(500))
     image_url_4      = db.Column(db.String(500))
