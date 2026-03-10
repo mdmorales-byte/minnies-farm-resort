@@ -339,7 +339,12 @@ createApp({
         authMsg.value = 'Account created! Welcome aboard.';
         authMsgType.value = 'success';
         regForm.value = { name: '', email: '', password: '', confirm: '', role: 'guest' };
-        setTimeout(() => navigate('rooms'), 800);
+        token.value = '';
+        currentUser.value = null;
+        localStorage.removeItem('token');
+        setTimeout(() => {
+          authTab.value = 'login';
+        }, 2000);
       } catch (err) { authMsg.value = 'Connection error: ' + err.message; authMsgType.value = 'error'; }
       loading.value = false;
     }
