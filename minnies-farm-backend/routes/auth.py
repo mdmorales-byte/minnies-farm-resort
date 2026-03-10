@@ -59,22 +59,25 @@ def register():
     VERIFY_TOKENS[token] = {'user_id': user.id, 'expires': time.time() + 86400}
     verify_link = f"https://mdmorales-byte.github.io/minnies-farm-resort?verify_token={token}"
 
-    msg = Message(
-        subject="Verify Your Email - Minnie's Farm Resort",
-        recipients=[data["email"]],
-        html=f"""
-        <div style="font-family: Arial, sans-serif; max-width: 500px; margin: 0 auto;">
-            <h2 style="color: #1a2e2a;">🌿 Minnie's Farm Resort</h2>
-            <p>Hi {data["name"]},</p>
-            <p>Please verify your email to activate your account:</p>
-            <a href="{verify_link}" style="display:inline-block;padding:12px 24px;background:#2d6a5f;color:white;text-decoration:none;border-radius:8px;margin:16px 0;">
-                Verify My Email
-            </a>
-            <p style="color:#888;font-size:0.85rem;">This link expires in 24 hours.</p>
-        </div>
-        """
-    )
-    mail.send(msg)
+    try:
+        msg = Message(
+            subject="Verify Your Email - Minnie's Farm Resort",
+            recipients=[data["email"]],
+            html=f"""
+            <div style="font-family: Arial, sans-serif; max-width: 500px; margin: 0 auto;">
+                <h2 style="color: #1a2e2a;">🌿 Minnie's Farm Resort</h2>
+                <p>Hi {data["name"]},</p>
+                <p>Please verify your email to activate your account:</p>
+                <a href="{verify_link}" style="display:inline-block;padding:12px 24px;background:#2d6a5f;color:white;text-decoration:none;border-radius:8px;margin:16px 0;">
+                    Verify My Email
+                </a>
+                <p style="color:#888;font-size:0.85rem;">This link expires in 24 hours.</p>
+            </div>
+            """
+        )
+        mail.send(msg)
+    except Exception as e:
+        print(f"Email sending failed: {e}")
 
     return jsonify({"message": "Account created! Please check your email to verify your account."}), 201
 
