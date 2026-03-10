@@ -18,6 +18,7 @@ class User(db.Model):
     email      = db.Column(db.String(100),  nullable=False, unique=True)
     password   = db.Column(db.String(255),  nullable=False)
     role       = db.Column(db.Enum("guest", "staff"), nullable=False, default="guest")
+    is_verified = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime,     default=datetime.utcnow)
 
     # relationships
@@ -29,6 +30,7 @@ class User(db.Model):
             "name":       self.name,
             "email":      self.email,
             "role":       self.role,
+            "is_verified": self.is_verified,
             "created_at": self.created_at.isoformat() if self.created_at else None,
         }
 
