@@ -27,12 +27,14 @@ BLOCKLIST = set()
 # In-memory store for reset tokens
 RESET_TOKENS = {}  # { token: { user_id, expires } }
 
+# In-memory store for verification tokens
+VERIFY_TOKENS = {}  # { token: { user_id, expires } }
+
 
 # ── REGISTER ──────────────────────────────────────────────────────────────────
 @auth_bp.route("/register", methods=["POST"])
 def register():
     data = request.get_json()
-
     required = ["name", "email", "password"]
     for field in required:
         if not data.get(field):
@@ -46,17 +48,35 @@ def register():
         name     = data["name"],
         email    = data["email"],
         password = hashed_pw,
-        role     = "guest",  # always guest on self-register
+        role     = "guest",
+        is_verified = False,
     )
     db.session.add(user)
     db.session.commit()
 
-    token = create_access_token(identity=str(user.id))
-    return jsonify({
-        "message": "Account created successfully!",
-        "token":   token,
-        "user":    user.to_dict(),
-    }), 201
+    # Send verification email
+    token = secrets.token_urlsafe(32)
+    VERIFY_TOKENS[token] = {'user_id': user.id, 'expires': time.time() + 86400}
+    verify_link = f"https://mdmorales-byte.github.io/minnies-farm-resort?verify_token={token}"
+
+    msg = Message(
+        subject="Verify Your Email - Minnie's Farm Resort",
+        recipients=[data["email"]],
+        html=f"""
+        <div style="font-family: Arial, sans-serif; max-width: 500px; margin: 0 auto;">
+            <h2 style="color: #1a2e2a;">🌿 Minnie's Farm Resort</h2>
+            <p>Hi {data["name"]},</p>
+            <p>Please verify your email to activate your account:</p>
+            <a href="{verify_link}" style="display:inline-block;padding:12px 24px;background:#2d6a5f;color:white;text-decoration:none;border-radius:8px;margin:16px 0;">
+                Verify My Email
+            </a>
+            <p style="color:#888;font-size:0.85rem;">This link expires in 24 hours.</p>
+        </div>
+        """
+    )
+    mail.send(msg)
+
+    return jsonify({"message": "Account created! Please check your email to verify your account."}), 201
 
 
 # ── LOGIN ─────────────────────────────────────────────────────────────────────
@@ -71,6 +91,9 @@ def login():
 
     if not user or not bcrypt.check_password_hash(user.password, data["password"]):
         return jsonify({"error": "Invalid email or password."}), 401
+
+    if not user.is_verified:
+        return jsonify({"error": "Please verify your email before signing in."}), 401
 
     token = create_access_token(identity=str(user.id))
     return jsonify({
@@ -223,3 +246,27 @@ def reset_password():
 
     del RESET_TOKENS[token]
     return jsonify({'message': 'Password reset successfully!'}), 200
+
+
+@auth_bp.route("/verify-email", methods=["GET"])
+def verify_email():
+    token = request.args.get('token')
+    if not token:
+        return jsonify({"error": "Token is required."}), 400
+
+    token_data = VERIFY_TOKENS.get(token)
+    if not token_data:
+        return jsonify({"error": "Invalid or expired token."}), 400
+
+    if time.time() > token_data['expires']:
+        del VERIFY_TOKENS[token]
+        return jsonify({"error": "Token has expired."}), 400
+
+    user = User.query.get(token_data['user_id'])
+    if not user:
+        return jsonify({"error": "User not found."}), 404
+
+    user.is_verified = True
+    db.session.commit()
+    del VERIFY_TOKENS[token]
+    return jsonify({"message": "Email verified! You can now sign in."}), 200
