@@ -67,6 +67,19 @@ def create_app():
         db.session.commit()
         return {"status": "Staff created!"}, 200
 
+    @app.route("/api/seed-all")
+    def seed_all():
+        from models import User, Room, Service
+        db.drop_all()
+        db.create_all()
+        users = [
+            User(name="Mick Daniel Morales", email="staff@resort.com", password=bcrypt.generate_password_hash("staff123").decode(), role="staff"),
+            User(name="Althea Louise Camano", email="guest@resort.com", password=bcrypt.generate_password_hash("guest123").decode(), role="guest"),
+        ]
+        db.session.add_all(users)
+        db.session.commit()
+        return {"status": "Database seeded!"}, 200
+
     with app.app_context():
         db.create_all()
 
