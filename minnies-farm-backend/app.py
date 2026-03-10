@@ -77,8 +77,21 @@ def create_app():
             User(name="Althea Louise Camano", email="guest@resort.com", password=bcrypt.generate_password_hash("guest123").decode(), role="guest"),
         ]
         db.session.add_all(users)
+        rooms = [
+            Room(room_number="R01", name="Coral Standard Room", type="Standard", capacity=2, price_per_night=3500, sqm=28, is_available=True, description="A cozy standard room perfect for couples.", amenities="Free Wi-Fi, Air Conditioning, Flat-screen TV, Mini Fridge", room_status="available"),
+            Room(room_number="R02", name="Palm Deluxe Room", type="Deluxe", capacity=3, price_per_night=5800, sqm=38, is_available=True, description="Spacious deluxe room with garden views.", amenities="Free Wi-Fi, Pool View, Bathtub, Minibar, Air Conditioning", room_status="available"),
+            Room(room_number="R03", name="Azure Ocean Suite", type="Suite", capacity=4, price_per_night=9500, sqm=60, is_available=True, description="Stunning ocean-facing suite with private balcony.", amenities="Ocean View, Private Balcony, Jacuzzi, Butler Service, Free Wi-Fi", room_status="available"),
+            Room(room_number="R04", name="Sunset Villa", type="Villa", capacity=6, price_per_night=18000, sqm=120, is_available=True, description="Exclusive private villa with its own pool.", amenities="Private Pool, Full Kitchen, BBQ Area, Butler Service, Free Wi-Fi", room_status="available"),
+        ]
+        db.session.add_all(rooms)
+        services = [
+            Service(name="Day Entrance", description="Access to resort grounds and gardens.", price=100.00, category="day_service", is_active=True),
+            Service(name="Karaoke Room", description="Private karaoke room for up to 10 people.", price=500.00, category="day_service", is_active=True),
+            Service(name="Day Fun Bundle (Entrance + Karaoke)", description="Combo deal: Day entrance + Karaoke session.", price=550.00, category="bundle", is_active=True),
+        ]
+        db.session.add_all(services)
         db.session.commit()
-        return {"status": "Database seeded!"}, 200
+        return {"status": "Database seeded with users, rooms and services!"}, 200
 
     with app.app_context():
         db.create_all()
