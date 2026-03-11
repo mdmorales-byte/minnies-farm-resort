@@ -1,16 +1,8 @@
 """
 routes/auth.py
-POST /api/auth/register
-POST /api/auth/login
-POST /api/auth/logout
-GET  /api/auth/me
-POST /api/auth/google
-POST /api/auth/facebook
-POST /api/auth/forgot-password
-POST /api/auth/reset-password
 """
 
-from flask import Blueprint, request, jsonify, current_app
+from flask import Blueprint, request, jsonify
 from flask_jwt_extended import (
     create_access_token, jwt_required, get_jwt_identity, get_jwt
 )
@@ -18,18 +10,12 @@ from flask_mail import Message
 from models import User
 from extensions import db, bcrypt, mail
 import secrets, time
-from seed import send_verification_email
 
 auth_bp = Blueprint("auth", __name__)
 
-# Simple in-memory blocklist for logged-out tokens
 BLOCKLIST = set()
-
-# In-memory store for reset tokens
-RESET_TOKENS = {}  # { token: { user_id, expires } }
-
-# In-memory store for verification tokens
-VERIFY_TOKENS = {}  # { token: { user_id, expires } }
+RESET_TOKENS = {}
+VERIFY_TOKENS = {}
 
 
 # ── REGISTER ──────────────────────────────────────────────────────────────────
@@ -46,10 +32,10 @@ def register():
 
     hashed_pw = bcrypt.generate_password_hash(data["password"]).decode("utf-8")
     user = User(
-        name     = data["name"],
-        email    = data["email"],
-        password = hashed_pw,
-        role     = "guest",
+        name        = data["name"],
+        email       = data["email"],
+        password    = hashed_pw,
+        role        = "guest",
         is_verified = False,
     )
     db.session.add(user)
@@ -59,8 +45,26 @@ def register():
     token = secrets.token_urlsafe(32)
     VERIFY_TOKENS[token] = {'user_id': user.id, 'expires': time.time() + 86400}
     verify_link = f"https://mdmorales-byte.github.io/minnies-farm-resort?verify_token={token}"
-    
-    send_verification_email(current_app, data["email"], data["name"], verify_link)
+
+    try:
+        msg = Message(
+            subject="Verify Your Email - Minnie's Farm Resort",
+            recipients=[data["email"]],
+            html=f"""
+            <div style="font-family: Arial, sans-serif; max-width: 500px; margin: 0 auto;">
+                <h2 style="color: #1a2e2a;">🌿 Minnie's Farm Resort</h2>
+                <p>Hi {data["name"]},</p>
+                <p>Please verify your email to activate your account:</p>
+                <a href="{verify_link}" style="display:inline-block;padding:12px 24px;background:#2d6a5f;color:white;text-decoration:none;border-radius:8px;margin:16px 0;">
+                    Verify My Email
+                </a>
+                <p style="color:#888;font-size:0.85rem;">This link expires in 24 hours.</p>
+            </div>
+            """
+        )
+        mail.send(msg)
+    except Exception as e:
+        print(f"Email sending failed: {e}")
 
     return jsonify({"message": "Account created! Please check your email to verify your account."}), 201
 
@@ -122,19 +126,17 @@ def google_login():
 
     if not user:
         user = User(
-            name=name,
-            email=email,
-            password=bcrypt.generate_password_hash(google_id).decode('utf-8'),
-            role='guest'
+            name        = name,
+            email       = email,
+            password    = bcrypt.generate_password_hash(google_id).decode('utf-8'),
+            role        = 'guest',
+            is_verified = True,  # Google accounts are pre-verified
         )
         db.session.add(user)
         db.session.commit()
 
     token = create_access_token(identity=str(user.id))
-    return jsonify({
-        'token': token,
-        'user': user.to_dict()
-    }), 200
+    return jsonify({'token': token, 'user': user.to_dict()}), 200
 
 
 # ── FACEBOOK LOGIN ────────────────────────────────────────────────────────────
@@ -152,19 +154,17 @@ def facebook_login():
 
     if not user:
         user = User(
-            name=name,
-            email=email,
-            password=bcrypt.generate_password_hash(facebook_id).decode('utf-8'),
-            role='guest'
+            name        = name,
+            email       = email,
+            password    = bcrypt.generate_password_hash(facebook_id).decode('utf-8'),
+            role        = 'guest',
+            is_verified = True,  # Facebook accounts are pre-verified
         )
         db.session.add(user)
         db.session.commit()
 
     token = create_access_token(identity=str(user.id))
-    return jsonify({
-        'token': token,
-        'user': user.to_dict()
-    }), 200
+    return jsonify({'token': token, 'user': user.to_dict()}), 200
 
 
 # ── FORGOT PASSWORD ───────────────────────────────────────────────────────────
@@ -181,8 +181,7 @@ def forgot_password():
     if user:
         token = secrets.token_urlsafe(32)
         RESET_TOKENS[token] = {'user_id': user.id, 'expires': time.time() + 3600}
-
-        reset_link = f"http://127.0.0.1:5500/minnies-farm-frontend/index.html?reset_token={token}"
+        reset_link = f"https://mdmorales-byte.github.io/minnies-farm-resort?reset_token={token}"
 
         try:
             msg = Message(
@@ -196,13 +195,13 @@ def forgot_password():
                     <a href="{reset_link}" style="display:inline-block;padding:12px 24px;background:#2d6a5f;color:white;text-decoration:none;border-radius:8px;margin:16px 0;">
                         Reset My Password
                     </a>
-                    <p style="color:#888;font-size:0.85rem;">This link expires in 1 hour. If you didn't request this, ignore this email.</p>
+                    <p style="color:#888;font-size:0.85rem;">This link expires in 1 hour.</p>
                 </div>
                 """
             )
             mail.send(msg)
         except Exception as e:
-            print(f"Password reset email sending failed: {e}")
+            print(f"Email sending failed: {e}")
 
     return jsonify({'message': 'If that email exists, a reset link has been sent.'}), 200
 
@@ -218,7 +217,6 @@ def reset_password():
         return jsonify({'error': 'Token and password are required.'}), 400
 
     token_data = RESET_TOKENS.get(token)
-
     if not token_data:
         return jsonify({'error': 'Invalid or expired reset token.'}), 400
 
@@ -232,11 +230,11 @@ def reset_password():
 
     user.password = bcrypt.generate_password_hash(new_password).decode('utf-8')
     db.session.commit()
-
     del RESET_TOKENS[token]
     return jsonify({'message': 'Password reset successfully!'}), 200
 
 
+# ── VERIFY EMAIL ──────────────────────────────────────────────────────────────
 @auth_bp.route("/verify-email", methods=["GET"])
 def verify_email():
     token = request.args.get('token')
