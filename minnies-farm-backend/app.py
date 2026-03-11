@@ -54,13 +54,13 @@ def create_app():
         from models import User
         existing = User.query.filter_by(email="staff@resort.com").first()
         if existing:
-            existing.password = bcrypt.generate_password_hash("$2b$12$v5Ni4ukzHzMm4pCsMnSPI.OgBEiJBTthD119FOPAqwaaXiPorIILu").decode()
+            existing.password = bcrypt.generate_password_hash("staff123").decode()
             db.session.commit()
             return {"status": "Staff password reset!"}, 200
         new_staff = User(
             name="Mick Daniel Morales",
             email="staff@resort.com",
-            password=bcrypt.generate_password_hash("$2b$12$v5Ni4ukzHzMm4pCsMnSPI.OgBEiJBTthD119FOPAqwaaXiPorIILu").decode(),
+            password=bcrypt.generate_password_hash("staff123").decode(),
             role="staff"
         )
         db.session.add(new_staff)
@@ -73,8 +73,8 @@ def create_app():
         db.drop_all()
         db.create_all()
         users = [
-            User(name="Mick Daniel Morales", email="staff@resort.com", password=bcrypt.generate_password_hash("$2b$12$v5Ni4ukzHzMm4pCsMnSPI.OgBEiJBTthD119FOPAqwaaXiPorIILu").decode(), role="staff", is_verified=True),
-            User(name="Althea Louise Camano", email="guest@resort.com", password=bcrypt.generate_password_hash("$2b$12$k3hAhp1cCUnutuKWIfbVquFekmo9fkeJ7ohpigs1p0xxvaaKEm1GK").decode(), role="guest", is_verified=True),
+            User(name="Mick Daniel Morales", email="staff@resort.com", password=bcrypt.generate_password_hash("staff123").decode(), role="staff", is_verified=True),
+            User(name="Althea Louise Camano", email="guest@resort.com", password=bcrypt.generate_password_hash("guest123").decode(), role="guest", is_verified=True),
         ]
         db.session.add_all(users)
         rooms = [
