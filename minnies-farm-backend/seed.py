@@ -83,5 +83,5 @@ with app.app_context():
     print(f"✅  {len(services)} services seeded.")
 
     print("\n🌿  Minnie's Farm Resort database is ready!")
-    print("   Staff login:  staff@resort.com  /  $2b$12$v5Ni4ukzHzMm4pCsMnSPI.OgBEiJBTthD119FOPAqwaaXiPorIILu")
-    print("   Guest login:  guest@resort.com  /  $2b$12$k3hAhp1cCUnutuKWIfbVquFekmo9fkeJ7ohpigs1p0xxvaaKEm1GK")
+    print("   Staff login:  staff@resort.com  /  staff123")
+    print("   Guest login:  guest@resort.com  /  guest123")
