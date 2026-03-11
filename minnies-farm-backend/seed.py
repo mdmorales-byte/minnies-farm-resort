@@ -5,32 +5,8 @@ Run once:  python seed.py
 
 from app import create_app, db, bcrypt
 from models import User, Room, Service
-import threading
-from flask_mail import Message, mail
 
 app = create_app()
-
-def send_verification_email(email, name, verify_link):
-    with app.app_context():
-        try:
-            msg = Message(
-                subject="Verify Your Email - Minnie's Farm Resort",
-                recipients=[email],
-                html=f"""
-                <div style="font-family: Arial, sans-serif; max-width: 500px; margin: 0 auto;">
-                    <h2 style="color: #1a2e2a;">🌿 Minnie's Farm Resort</h2>
-                    <p>Hi {name},</p>
-                    <p>Please verify your email to activate your account:</p>
-                    <a href="{verify_link}" style="display:inline-block;padding:12px 24px;background:#2d6a5f;color:white;text-decoration:none;border-radius:8px;margin:16px 0;">
-                        Verify My Email
-                    </a>
-                    <p style="color:#888;font-size:0.85rem;">This link expires in 24 hours.</p>
-                </div>
-                """
-            )
-            mail.send(msg)
-        except Exception as e:
-            print(f"Email sending failed: {e}")
 
 with app.app_context():
     # ── Wipe existing data ─────────────────────────────────────────────────────
@@ -40,8 +16,8 @@ with app.app_context():
 
     # ── Users ──────────────────────────────────────────────────────────────────
     users = [
-        User(name="Mick Daniel Morales",       email="staff@resort.com",  password=bcrypt.generate_password_hash("staff123").decode(),  role="staff"),
-        User(name="Althea Louise Camano",      email="guest@resort.com",  password=bcrypt.generate_password_hash("guest123").decode(),  role="guest"),
+        User(name="Mick Daniel Morales",  email="staff@resort.com", password=bcrypt.generate_password_hash("staff123").decode(), role="staff", is_verified=True),
+        User(name="Althea Louise Camano", email="guest@resort.com", password=bcrypt.generate_password_hash("guest123").decode(), role="guest", is_verified=True),
     ]
     db.session.add_all(users)
     db.session.commit()
@@ -54,25 +30,29 @@ with app.app_context():
             capacity=2, price_per_night=1000, sqm=28, is_available=True,
             description="Our Single Room is a refined haven for the independent traveler. Designed to offer a peaceful escape, this room features a plush bed and large windows that invite the morning sun. It is the perfect spot to unplug, enjoy a quiet morning coffee, and recharge in a space that feels entirely your own.",
             amenities="Free Wi-Fi, Air Conditioning, Flat-screen TV",
+            room_status="available",
         ),
         Room(
             room_number="R02", name="Kids Room", type="Themed",
             capacity=3, price_per_night=1500, sqm=38, is_available=True,
-            description="The Kids Room is a vibrant, imaginative space designed specifically for our youngest guests. With playful decor and comfortable twin or bunk beds, it’s a room that turns bedtime into part of the vacation fun. It provides a safe, energetic environment where children can relax after a day of outdoor play and discovery.",
+            description="The Kids Room is a vibrant, imaginative space designed specifically for our youngest guests. With playful decor and comfortable twin or bunk beds, it's a room that turns bedtime into part of the vacation fun. It provides a safe, energetic environment where children can relax after a day of outdoor play and discovery.",
             amenities="Free Wi-Fi, Pool View, Bathtub, Air Conditioning",
+            room_status="available",
         ),
         Room(
             room_number="R03", name="Double Room", type="Deluxe",
             capacity=4, price_per_night=2500, sqm=60, is_available=True,
-            description="Perfect for friends or couples, the Double Room offers a spacious layout with flexible bedding options. Thoughtfully appointed with warm textures and modern comforts, this room serves as a relaxing home base. Whether you’re resting between activities or winding down for the night, the cozy ambiance ensures a refreshing stay for two.",
+            description="Perfect for friends or couples, the Double Room offers a spacious layout with flexible bedding options. Thoughtfully appointed with warm textures and modern comforts, this room serves as a relaxing home base. Whether you're resting between activities or winding down for the night, the cozy ambiance ensures a refreshing stay for two.",
             amenities="Butler Service, Free Wi-Fi",
+            room_status="available",
         ),
         Room(
             room_number="R04", name="Family Room", type="Suite",
             capacity=4, price_per_night=4500, sqm=60, is_available=True,
-            description="Our Family Room is designed for connection and ease, offering ample space for the whole group to gather comfortably. Featuring multiple sleeping areas and a cozy lounge corner, it allows families to stay close while still having room to breathe. It’s a generous, welcoming suite built for making memories and sharing stories after a full day of resort fun.",
+            description="Our Family Room is designed for connection and ease, offering ample space for the whole group to gather comfortably. Featuring multiple sleeping areas and a cozy lounge corner, it allows families to stay close while still having room to breathe. It's a generous, welcoming suite built for making memories and sharing stories after a full day of resort fun.",
             amenities="Free Wi-Fi",
-        )
+            room_status="available",
+        ),
     ]
     db.session.add_all(rooms)
     db.session.commit()

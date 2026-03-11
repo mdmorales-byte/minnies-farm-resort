@@ -2,20 +2,29 @@
 routes/auth.py
 """
 
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, current_app
 from flask_jwt_extended import (
     create_access_token, jwt_required, get_jwt_identity, get_jwt
 )
 from flask_mail import Message
 from models import User
 from extensions import db, bcrypt, mail
-import secrets, time
+import secrets, time, threading
 
 auth_bp = Blueprint("auth", __name__)
 
 BLOCKLIST = set()
 RESET_TOKENS = {}
 VERIFY_TOKENS = {}
+
+
+# ── HELPER: Send email in background thread ───────────────────────────────────
+def send_email_async(app, msg):
+    with app.app_context():
+        try:
+            mail.send(msg)
+        except Exception as e:
+            print(f"Email sending failed: {e}")
 
 
 # ── REGISTER ──────────────────────────────────────────────────────────────────
@@ -41,30 +50,26 @@ def register():
     db.session.add(user)
     db.session.commit()
 
-    # Send verification email
     token = secrets.token_urlsafe(32)
     VERIFY_TOKENS[token] = {'user_id': user.id, 'expires': time.time() + 86400}
     verify_link = f"https://mdmorales-byte.github.io/minnies-farm-resort?verify_token={token}"
 
-    try:
-        msg = Message(
-            subject="Verify Your Email - Minnie's Farm Resort",
-            recipients=[data["email"]],
-            html=f"""
-            <div style="font-family: Arial, sans-serif; max-width: 500px; margin: 0 auto;">
-                <h2 style="color: #1a2e2a;">🌿 Minnie's Farm Resort</h2>
-                <p>Hi {data["name"]},</p>
-                <p>Please verify your email to activate your account:</p>
-                <a href="{verify_link}" style="display:inline-block;padding:12px 24px;background:#2d6a5f;color:white;text-decoration:none;border-radius:8px;margin:16px 0;">
-                    Verify My Email
-                </a>
-                <p style="color:#888;font-size:0.85rem;">This link expires in 24 hours.</p>
-            </div>
-            """
-        )
-        mail.send(msg)
-    except Exception as e:
-        print(f"Email sending failed: {e}")
+    msg = Message(
+        subject="Verify Your Email - Minnie's Farm Resort",
+        recipients=[data["email"]],
+        html=f"""
+        <div style="font-family: Arial, sans-serif; max-width: 500px; margin: 0 auto;">
+            <h2 style="color: #1a2e2a;">🌿 Minnie's Farm Resort</h2>
+            <p>Hi {data["name"]},</p>
+            <p>Please verify your email to activate your account:</p>
+            <a href="{verify_link}" style="display:inline-block;padding:12px 24px;background:#2d6a5f;color:white;text-decoration:none;border-radius:8px;margin:16px 0;">
+                Verify My Email
+            </a>
+            <p style="color:#888;font-size:0.85rem;">This link expires in 24 hours.</p>
+        </div>
+        """
+    )
+    threading.Thread(target=send_email_async, args=(current_app._get_current_object(), msg)).start()
 
     return jsonify({"message": "Account created! Please check your email to verify your account."}), 201
 
@@ -130,7 +135,7 @@ def google_login():
             email       = email,
             password    = bcrypt.generate_password_hash(google_id).decode('utf-8'),
             role        = 'guest',
-            is_verified = True,  # Google accounts are pre-verified
+            is_verified = True,
         )
         db.session.add(user)
         db.session.commit()
@@ -158,7 +163,7 @@ def facebook_login():
             email       = email,
             password    = bcrypt.generate_password_hash(facebook_id).decode('utf-8'),
             role        = 'guest',
-            is_verified = True,  # Facebook accounts are pre-verified
+            is_verified = True,
         )
         db.session.add(user)
         db.session.commit()
@@ -183,25 +188,22 @@ def forgot_password():
         RESET_TOKENS[token] = {'user_id': user.id, 'expires': time.time() + 3600}
         reset_link = f"https://mdmorales-byte.github.io/minnies-farm-resort?reset_token={token}"
 
-        try:
-            msg = Message(
-                subject="Reset Your Password - Minnie's Farm Resort",
-                recipients=[email],
-                html=f"""
-                <div style="font-family: Arial, sans-serif; max-width: 500px; margin: 0 auto;">
-                    <h2 style="color: #1a2e2a;">🌿 Minnie's Farm Resort</h2>
-                    <p>Hi {user.name},</p>
-                    <p>We received a request to reset your password. Click the button below:</p>
-                    <a href="{reset_link}" style="display:inline-block;padding:12px 24px;background:#2d6a5f;color:white;text-decoration:none;border-radius:8px;margin:16px 0;">
-                        Reset My Password
-                    </a>
-                    <p style="color:#888;font-size:0.85rem;">This link expires in 1 hour.</p>
-                </div>
-                """
-            )
-            mail.send(msg)
-        except Exception as e:
-            print(f"Email sending failed: {e}")
+        msg = Message(
+            subject="Reset Your Password - Minnie's Farm Resort",
+            recipients=[email],
+            html=f"""
+            <div style="font-family: Arial, sans-serif; max-width: 500px; margin: 0 auto;">
+                <h2 style="color: #1a2e2a;">🌿 Minnie's Farm Resort</h2>
+                <p>Hi {user.name},</p>
+                <p>We received a request to reset your password. Click the button below:</p>
+                <a href="{reset_link}" style="display:inline-block;padding:12px 24px;background:#2d6a5f;color:white;text-decoration:none;border-radius:8px;margin:16px 0;">
+                    Reset My Password
+                </a>
+                <p style="color:#888;font-size:0.85rem;">This link expires in 1 hour.</p>
+            </div>
+            """
+        )
+        threading.Thread(target=send_email_async, args=(current_app._get_current_object(), msg)).start()
 
     return jsonify({'message': 'If that email exists, a reset link has been sent.'}), 200
 
