@@ -119,7 +119,7 @@
       <div class="filter-bar">
         <div class="filter-group"><label>Check-in</label><input type="date" v-model="filters.checkIn" /></div>
         <div class="filter-group"><label>Check-out</label><input type="date" v-model="filters.checkOut" /></div>
-        <div class="filter-group"><label>Room Type</label><select v-model="filters.type"><option value="">All Types</option><option>Standard</option><option>Deluxe</option><option>Suite</option><option>Villa</option></select></div>
+        <div class="filter-group"><label>Room Type</label><select v-model="filters.type"><option value="">All Types</option><option>Standard</option><option>Themed</option><option>Deluxe</option><option>Suite</option></select></div>
         <div class="filter-group"><label>Max Price / Night</label><input type="number" v-model="filters.maxPrice" placeholder="Any" /></div>
         <div class="filter-group"><label>Guests</label><select v-model="filters.capacity"><option value="">Any</option><option value="1">1 Guest</option><option value="2">2 Guests</option><option value="4">Up to 4</option><option value="6">Up to 6</option></select></div>
         <div class="filter-group" style="display:flex;align-items:flex-end"><button class="btn btn-teal" style="width:100%" @click="resetFilters">Reset</button></div>
@@ -520,7 +520,7 @@
       <div class="form-group"><label>Room Number</label><input v-model="roomForm.room_number" placeholder="e.g. 101" /></div>
       <div class="form-group"><label>Room Name</label><input v-model="roomForm.name" placeholder="e.g. Farm View" /></div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
-        <div class="form-group"><label>Room Type</label><select v-model="roomForm.type"><option>Standard</option><option>Deluxe</option><option>Suite</option><option>Villa</option></select></div>
+        <div class="form-group"><label>Room Type</label><select v-model="roomForm.type"><option>Standard</option><option>Themed</option><option>Deluxe</option><option>Suite</option></select></div>
         <div class="form-group"><label>Capacity</label><input type="number" v-model="roomForm.capacity" min="1" max="10" /></div>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">

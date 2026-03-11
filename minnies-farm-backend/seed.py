@@ -18,7 +18,6 @@ with app.app_context():
     users = [
         User(name="Mick Daniel Morales",       email="staff@resort.com",  password=bcrypt.generate_password_hash("staff123").decode(),  role="staff"),
         User(name="Althea Louise Camano",      email="guest@resort.com",  password=bcrypt.generate_password_hash("guest123").decode(),  role="guest"),
-        User(name="Carlos Dela Cruz",  email="carlos@email.com",  password=bcrypt.generate_password_hash("pass1234").decode(),  role="guest"),
     ]
     db.session.add_all(users)
     db.session.commit()
@@ -27,41 +26,29 @@ with app.app_context():
     # ── Rooms ──────────────────────────────────────────────────────────────────
     rooms = [
         Room(
-            room_number="R01", name="Coral Standard Room", type="Standard",
+            room_number="R01", name="Single Room", type="Standard",
             capacity=2, price_per_night=3500, sqm=28, is_available=True,
-            description="A cozy standard room with modern amenities, perfect for couples or solo travelers seeking comfort and value.",
-            amenities="Free Wi-Fi, Air Conditioning, Flat-screen TV, Mini Fridge",
+            description="Our Single Room is a refined haven for the independent traveler. Designed to offer a peaceful escape, this room features a plush bed and large windows that invite the morning sun. It is the perfect spot to unplug, enjoy a quiet morning coffee, and recharge in a space that feels entirely your own.",
+            amenities="Free Wi-Fi, Air Conditioning, Flat-screen TV",
         ),
         Room(
-            room_number="R02", name="Palm Deluxe Room", type="Deluxe",
+            room_number="R02", name="Kids Room", type="Themed",
             capacity=3, price_per_night=5800, sqm=38, is_available=True,
-            description="Spacious deluxe room with garden views, premium bedding, and upgraded toiletries.",
+            description="The Kids Room is a vibrant, imaginative space designed specifically for our youngest guests. With playful decor and comfortable twin or bunk beds, it’s a room that turns bedtime into part of the vacation fun. It provides a safe, energetic environment where children can relax after a day of outdoor play and discovery.",
             amenities="Free Wi-Fi, Pool View, Bathtub, Minibar, Air Conditioning",
         ),
         Room(
-            room_number="R03", name="Azure Ocean Suite", type="Suite",
+            room_number="R03", name="Double Room", type="Deluxe",
             capacity=4, price_per_night=9500, sqm=60, is_available=True,
-            description="Stunning ocean-facing suite with a private balcony, living area, and premium amenities.",
-            amenities="Ocean View, Private Balcony, Jacuzzi, Butler Service, Free Wi-Fi, Minibar",
+            description="Perfect for friends or couples, the Double Room offers a spacious layout with flexible bedding options. Thoughtfully appointed with warm textures and modern comforts, this room serves as a relaxing home base. Whether you’re resting between activities or winding down for the night, the cozy ambiance ensures a refreshing stay for two.",
+            amenities="Butler Service, Free Wi-Fi",
         ),
         Room(
-            room_number="R04", name="Sunset Villa", type="Villa",
-            capacity=6, price_per_night=18000, sqm=120, is_available=True,
-            description="Exclusive private villa with its own pool, kitchen, and outdoor lounging area.",
-            amenities="Private Pool, Full Kitchen, BBQ Area, Butler Service, Free Wi-Fi, Golf Cart",
-        ),
-        Room(
-            room_number="R05", name="Garden Deluxe", type="Deluxe",
-            capacity=2, price_per_night=4800, sqm=35, is_available=True,
-            description="Tranquil deluxe room surrounded by lush tropical gardens.",
-            amenities="Garden View, Free Wi-Fi, Rain Shower, Air Conditioning, Room Service",
-        ),
-        Room(
-            room_number="R06", name="Family Suite", type="Suite",
-            capacity=6, price_per_night=12000, sqm=85, is_available=True,
-            description="Designed for families with two bedrooms, a living room, and kid-friendly amenities.",
-            amenities="2 Bedrooms, Living Area, Kids Club Access, Free Wi-Fi, Pool Access",
-        ),
+            room_number="R04", name="Family Room", type="Suite",
+            capacity=4, price_per_night=1200, sqm=60, is_available=True,
+            description="Our Family Room is designed for connection and ease, offering ample space for the whole group to gather comfortably. Featuring multiple sleeping areas and a cozy lounge corner, it allows families to stay close while still having room to breathe. It’s a generous, welcoming suite built for making memories and sharing stories after a full day of resort fun.",
+            amenities="Free Wi-Fi",
+        )
     ]
     db.session.add_all(rooms)
     db.session.commit()
@@ -71,14 +58,14 @@ with app.app_context():
     services = [
         Service(
             name="Day Entrance",
-            description="Access to resort grounds, gardens, farm animal viewing, nature walk, picnic areas, and kids play area. Children 3 and below are FREE.",
+            description="Access to resort grounds, gardens, nature walk, picnic areas, and kids play area. Children 3 and below are FREE.",
             price=100.00,
             category="day_service",
             is_active=True,
         ),
         Service(
             name="Karaoke Room",
-            description="Private karaoke room for up to 10 people. Includes 2 wireless microphones, full song library (OPM, Pop, K-pop), and large screen TV. Good for 2 hours. Extension: ₱200/hour.",
+            description="Private karaoke room for up to 10 people. Includes 2 microphones, full song library (OPM, Pop, K-pop), and large screen TV. Good for 2 hours. Extension: ₱200/hour.",
             price=500.00,
             category="day_service",
             is_active=True,
@@ -96,5 +83,5 @@ with app.app_context():
     print(f"✅  {len(services)} services seeded.")
 
     print("\n🌿  Minnie's Farm Resort database is ready!")
-    print("   Staff login:  staff@resort.com  /  staff123")
-    print("   Guest login:  guest@resort.com  /  guest123")
+    print("   Staff login:  staff@resort.com  /  $2b$12$v5Ni4ukzHzMm4pCsMnSPI.OgBEiJBTthD119FOPAqwaaXiPorIILu")
+    print("   Guest login:  guest@resort.com  /  $2b$12$k3hAhp1cCUnutuKWIfbVquFekmo9fkeJ7ohpigs1p0xxvaaKEm1GK")

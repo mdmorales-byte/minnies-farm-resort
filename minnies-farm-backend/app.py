@@ -54,13 +54,13 @@ def create_app():
         from models import User
         existing = User.query.filter_by(email="staff@resort.com").first()
         if existing:
-            existing.password = bcrypt.generate_password_hash("staff123").decode()
+            existing.password = bcrypt.generate_password_hash("$2b$12$v5Ni4ukzHzMm4pCsMnSPI.OgBEiJBTthD119FOPAqwaaXiPorIILu").decode()
             db.session.commit()
             return {"status": "Staff password reset!"}, 200
         new_staff = User(
             name="Mick Daniel Morales",
             email="staff@resort.com",
-            password=bcrypt.generate_password_hash("staff123").decode(),
+            password=bcrypt.generate_password_hash("$2b$12$v5Ni4ukzHzMm4pCsMnSPI.OgBEiJBTthD119FOPAqwaaXiPorIILu").decode(),
             role="staff"
         )
         db.session.add(new_staff)
@@ -73,15 +73,15 @@ def create_app():
         db.drop_all()
         db.create_all()
         users = [
-            User(name="Mick Daniel Morales", email="staff@resort.com", password=bcrypt.generate_password_hash("staff123").decode(), role="staff", is_verified=True),
-            User(name="Althea Louise Camano", email="guest@resort.com", password=bcrypt.generate_password_hash("guest123").decode(), role="guest", is_verified=True),
+            User(name="Mick Daniel Morales", email="staff@resort.com", password=bcrypt.generate_password_hash("$2b$12$v5Ni4ukzHzMm4pCsMnSPI.OgBEiJBTthD119FOPAqwaaXiPorIILu").decode(), role="staff", is_verified=True),
+            User(name="Althea Louise Camano", email="guest@resort.com", password=bcrypt.generate_password_hash("$2b$12$k3hAhp1cCUnutuKWIfbVquFekmo9fkeJ7ohpigs1p0xxvaaKEm1GK").decode(), role="guest", is_verified=True),
         ]
         db.session.add_all(users)
         rooms = [
-            Room(room_number="R01", name="Coral Standard Room", type="Standard", capacity=2, price_per_night=3500, sqm=28, is_available=True, description="A cozy standard room perfect for couples.", amenities="Free Wi-Fi, Air Conditioning, Flat-screen TV, Mini Fridge", room_status="available"),
-            Room(room_number="R02", name="Palm Deluxe Room", type="Deluxe", capacity=3, price_per_night=5800, sqm=38, is_available=True, description="Spacious deluxe room with garden views.", amenities="Free Wi-Fi, Pool View, Bathtub, Minibar, Air Conditioning", room_status="available"),
-            Room(room_number="R03", name="Azure Ocean Suite", type="Suite", capacity=4, price_per_night=9500, sqm=60, is_available=True, description="Stunning ocean-facing suite with private balcony.", amenities="Ocean View, Private Balcony, Jacuzzi, Butler Service, Free Wi-Fi", room_status="available"),
-            Room(room_number="R04", name="Sunset Villa", type="Villa", capacity=6, price_per_night=18000, sqm=120, is_available=True, description="Exclusive private villa with its own pool.", amenities="Private Pool, Full Kitchen, BBQ Area, Butler Service, Free Wi-Fi", room_status="available"),
+            Room(room_number="R01", name="Single Room", type="Standard", capacity=1, price_per_night=3500, sqm=28, is_available=True, description="Our Single Room is a refined haven for the independent traveler. Designed to offer a peaceful escape, this room features a plush bed and large windows that invite the morning sun. It is the perfect spot to unplug, enjoy a quiet morning coffee, and recharge in a space that feels entirely your own.", amenities="Free Wi-Fi, Air Conditioning, Flat-screen TV", room_status="available"),
+            Room(room_number="R02", name="Kids Room", type="Themed", capacity=5, price_per_night=5800, sqm=38, is_available=True, description="The Kids Room is a vibrant, imaginative space designed specifically for our youngest guests. With playful decor and comfortable twin or bunk beds, it’s a room that turns bedtime into part of the vacation fun. It provides a safe, energetic environment where children can relax after a day of outdoor play and discovery.", amenities="Free Wi-Fi, Pool View, Bathtub", room_status="available"),
+            Room(room_number="R03", name="Double Room", type="Deluxe", capacity=2, price_per_night=9500, sqm=60, is_available=True, description="", amenities="Ocean View, Private Balcony, Jacuzzi, Butler Service, Free Wi-Fi", room_status="available"),
+            Room(room_number="R04", name="Family Room", type="Suite", capacity=10, price_per_night=18000, sqm=120, is_available=True, description="Our Family Room is designed for connection and ease, offering ample space for the whole group to gather comfortably. Featuring multiple sleeping areas and a cozy lounge corner, it allows families to stay close while still having room to breathe. It’s a generous, welcoming suite built for making memories and sharing stories after a full day of resort fun.", amenities="BBQ Area, Butler Service, Free Wi-Fi", room_status="available"),
         ]
         db.session.add_all(rooms)
         services = [
