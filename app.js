@@ -200,7 +200,7 @@ createApp({
     ];
 
     const teamMembers = [
-      { name: 'Maximina Cortez Morales', initials: 'MM', role: 'Founder & Owner', photo: 'https://i.imgur.com/I4ySvV3.jpg', desc: 'The heart of the resort. Minnie turned her family farm into a beloved getaway with warmth and determination.', color: 'linear-gradient(135deg,#4a7c3f,#2d4a1e)' },
+      { name: 'Maximina Cortez Morales', initials: 'MM', role: 'Founder & Owner', photo: 'https://i.postimg.cc/gkYV7pjb/lola.jpg', desc: 'The heart of the resort. Minnie turned her family farm into a beloved getaway with warmth and determination.', color: 'linear-gradient(135deg,#4a7c3f,#2d4a1e)' },
       { name: 'Mick Daniel Morales', initials: 'MD', role: 'Fullstack Developer', photo: 'https://i.imgur.com/izbkYqi.jpg', desc: "Designed and built the resort's booking interface with Vue.js for a smooth guest experience.", color: 'linear-gradient(135deg,#2d6a5f,#1a2e2a)' },
       { name: 'Kian Antonio', initials: 'KA', role: 'Backend Developer', photo: 'https://i.imgur.com/yiCAiZh.jpg', desc: 'Built the Flask API powering all reservations, authentication, and room management logic.', color: 'linear-gradient(135deg,#c9a84c,#8a6a1a)' },
       { name: 'Curt Aldre Olila', initials: 'CA', role: 'Database Developer', photo: null, desc: 'Designed the MySQL schema ensuring data integrity and fast availability queries.', color: 'linear-gradient(135deg,#5a3a7c,#2d1a4a)' },
@@ -400,8 +400,8 @@ createApp({
           rooms.value = data.rooms || [];
           rooms.value.forEach(r => {
             if (!r.emoji) {
-              const emojis = { 'Standard': '🌊', 'Deluxe': '🌴', 'Suite': '🌅', 'Villa': '🏨' };
-              r.emoji = emojis[r.type] || '🏨';
+              const emojis = { 'Standard': '👤', 'Themed': '🎈', 'Deluxe': '👥', 'Suite': '🏠' };
+              r.emoji = emojis[r.type] || '🏠';
             }
           });
         }
@@ -437,7 +437,7 @@ createApp({
           allBookings.value = (data.bookings || []).map(b => ({
             ...b,
             guestName: currentUser.value.name,
-            emoji: rooms.value.find(r => r.id === b.room_id)?.emoji || '🏨',
+            emoji: rooms.value.find(r => r.id === b.room_id)?.emoji || '🏠',
             room: rooms.value.find(r => r.id === b.room_id)?.name || 'Room ' + b.room_id,
             checkIn: b.check_in_date,
             checkOut: b.check_out_date,
