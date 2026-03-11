@@ -6,10 +6,11 @@ from flask import Blueprint, request, jsonify, current_app
 from flask_jwt_extended import (
     create_access_token, jwt_required, get_jwt_identity, get_jwt
 )
-from flask_mail import Message
 from models import User
-from extensions import db, bcrypt, mail
-import secrets, time, threading
+from extensions import db, bcrypt
+import secrets, time, threading, os
+from sendgrid import SendGridAPIClient
+from sendgrid.helpers.mail import Mail
 
 auth_bp = Blueprint("auth", __name__)
 
@@ -18,13 +19,22 @@ RESET_TOKENS = {}
 VERIFY_TOKENS = {}
 
 
-# ── HELPER: Send email in background thread ───────────────────────────────────
-def send_email_async(app, msg):
-    with app.app_context():
+# ── HELPER: Send email via SendGrid in background ─────────────────────────────
+def send_email_async(to_email, subject, html_content):
+    def _send():
         try:
-            mail.send(msg)
+            message = Mail(
+                from_email=("Minnie's Farm Resort", "moralesmickdaniel7@gmail.com"),
+                to_emails=to_email,
+                subject=subject,
+                html_content=html_content
+            )
+            sg = SendGridAPIClient(os.getenv('SENDGRID_API_KEY'))
+            sg.send(message)
+            print(f"Email sent to {to_email}")
         except Exception as e:
             print(f"Email sending failed: {e}")
+    threading.Thread(target=_send).start()
 
 
 # ── REGISTER ──────────────────────────────────────────────────────────────────
@@ -54,10 +64,10 @@ def register():
     VERIFY_TOKENS[token] = {'user_id': user.id, 'expires': time.time() + 86400}
     verify_link = f"https://mdmorales-byte.github.io/minnies-farm-resort?verify_token={token}"
 
-    msg = Message(
-        subject="Verify Your Email - Minnie's Farm Resort",
-        recipients=[data["email"]],
-        html=f"""
+    send_email_async(
+        data["email"],
+        "Verify Your Email - Minnie's Farm Resort",
+        f"""
         <div style="font-family: Arial, sans-serif; max-width: 500px; margin: 0 auto;">
             <h2 style="color: #1a2e2a;">🌿 Minnie's Farm Resort</h2>
             <p>Hi {data["name"]},</p>
@@ -69,7 +79,6 @@ def register():
         </div>
         """
     )
-    threading.Thread(target=send_email_async, args=(current_app._get_current_object(), msg)).start()
 
     return jsonify({"message": "Account created! Please check your email to verify your account."}), 201
 
@@ -188,10 +197,10 @@ def forgot_password():
         RESET_TOKENS[token] = {'user_id': user.id, 'expires': time.time() + 3600}
         reset_link = f"https://mdmorales-byte.github.io/minnies-farm-resort?reset_token={token}"
 
-        msg = Message(
-            subject="Reset Your Password - Minnie's Farm Resort",
-            recipients=[email],
-            html=f"""
+        send_email_async(
+            email,
+            "Reset Your Password - Minnie's Farm Resort",
+            f"""
             <div style="font-family: Arial, sans-serif; max-width: 500px; margin: 0 auto;">
                 <h2 style="color: #1a2e2a;">🌿 Minnie's Farm Resort</h2>
                 <p>Hi {user.name},</p>
@@ -203,7 +212,6 @@ def forgot_password():
             </div>
             """
         )
-        threading.Thread(target=send_email_async, args=(current_app._get_current_object(), msg)).start()
 
     return jsonify({'message': 'If that email exists, a reset link has been sent.'}), 200
 
