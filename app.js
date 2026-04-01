@@ -10,6 +10,7 @@ createApp({
 
     const authMsg = ref('');
     const authMsgType = ref('');
+    const authMsgKey = ref(0);  // For animation re-trigger
     const showRoomModal = ref(false);
     const editingRoom = ref(null);
     const loading = ref(false);
@@ -346,7 +347,12 @@ createApp({
           body: JSON.stringify({ email: loginForm.value.email, password: loginForm.value.password })
         });
         const data = await res.json();
-        if (!res.ok) { authMsg.value = data.error || 'Login failed'; authMsgType.value = 'error'; return; }
+        if (!res.ok) { 
+          authMsg.value = data.error || 'Login failed'; 
+          authMsgType.value = 'error'; 
+          authMsgKey.value++;  // Trigger animation
+          return; 
+        }
         token.value = data.token;
         localStorage.setItem('token', data.token);
         currentUser.value = data.user;
@@ -355,22 +361,35 @@ createApp({
         showToast(`Welcome back, ${data.user.name}! 🎉`, 'success', 3000);
         loginForm.value = { email: '', password: '' };
         setTimeout(() => navigate(data.user.role === 'staff' ? 'dashboard' : 'rooms'), 800);
-      } catch (err) { authMsg.value = 'Connection error: ' + err.message; authMsgType.value = 'error'; }
+      } catch (err) { 
+        authMsg.value = 'Connection error: ' + err.message; 
+        authMsgType.value = 'error'; 
+        authMsgKey.value++;  // Trigger animation
+      }
       loading.value = false;
     }
 
     async function doRegister() {
       if (!regForm.value.name || !regForm.value.email || !regForm.value.password) {
-        authMsg.value = 'Please fill in all fields.'; authMsgType.value = 'error'; return;
+        authMsg.value = 'Please fill in all fields.'; 
+        authMsgType.value = 'error'; 
+        authMsgKey.value++;
+        return;
       }
       if (regForm.value.password !== regForm.value.confirm) {
-        authMsg.value = 'Passwords do not match.'; authMsgType.value = 'error'; return;
+        authMsg.value = 'Passwords do not match.'; 
+        authMsgType.value = 'error'; 
+        authMsgKey.value++;
+        return;
       }
       
       // Validate email format
       const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
       if (!emailRegex.test(regForm.value.email)) {
-        authMsg.value = 'Please enter a valid email address (e.g., user@example.com).'; authMsgType.value = 'error'; return;
+        authMsg.value = 'Please enter a valid email address (e.g., user@example.com).'; 
+        authMsgType.value = 'error'; 
+        authMsgKey.value++;
+        return;
       }
       
       loading.value = true;
@@ -381,7 +400,12 @@ createApp({
           body: JSON.stringify({ name: regForm.value.name, email: regForm.value.email, password: regForm.value.password, role: 'guest' })
         });
         const data = await res.json();
-        if (!res.ok) { authMsg.value = data.error || 'Registration failed'; authMsgType.value = 'error'; return; }
+        if (!res.ok) { 
+          authMsg.value = data.error || 'Registration failed'; 
+          authMsgType.value = 'error'; 
+          authMsgKey.value++;
+          return; 
+        }
         // Success: account created, user is verified and can login
         authMsg.value = '✅ Account created! You can now sign in.';
         authMsgType.value = 'success';
@@ -392,7 +416,11 @@ createApp({
           authTab.value = 'login';
           authMsg.value = '';
         }, 3000);
-      } catch (err) { authMsg.value = 'Connection error: ' + err.message; authMsgType.value = 'error'; }
+      } catch (err) { 
+        authMsg.value = 'Connection error: ' + err.message; 
+        authMsgType.value = 'error'; 
+        authMsgKey.value++;
+      }
       loading.value = false;
     }
 
@@ -741,7 +769,7 @@ createApp({
 
     // ── RETURN (all refs/functions exposed to template) ────────────────────────
     return {
-      page, authTab, dashTab, authMsg, authMsgType, showRoomModal, editingRoom, loading,
+      page, authTab, dashTab, authMsg, authMsgType, authMsgKey, showRoomModal, editingRoom, loading,
       today, currentUser, token, loginForm, regForm, showLoginPw, showRegPw, showRegConfirmPw, rooms, filters, selectedRoom,
       bookingForm, roomForm, lastBooking, allBookings, features, teamMembers, faqs,
       filteredRooms, bookingNights, bookingTotal, upcomingBookings, pastBookings,

@@ -86,7 +86,7 @@
           <button class="auth-tab" :class="{active: authTab==='login'}" @click="authTab='login'">Sign In</button>
           <button class="auth-tab" :class="{active: authTab==='register'}" @click="authTab='register'">Register</button>
         </div>
-        <div v-if="authMsg" :key="authMsg" :class="['alert', authMsgType==='success'?'alert-success':'alert-error']">{{ authMsg }}</div>
+        <div v-if="authMsg" :key="authMsgKey" :class="['alert', authMsgType==='success'?'alert-success':'alert-error']">{{ authMsg }}</div>
         <div v-if="authTab==='login'">
           <div class="form-group"><label>Email Address</label><input type="email" v-model="loginForm.email" placeholder="guest@email.com" /></div>
           <div class="form-group"><label>Password</label><div style="position:relative"><input :type="showLoginPw ? 'text' : 'password'" v-model="loginForm.password" placeholder="••••••••" style="width:100%;padding-right:2.5rem" /><span @click="showLoginPw=!showLoginPw" style="position:absolute;right:0.75rem;top:50%;transform:translateY(-50%);cursor:pointer;color:var(--muted);font-size:1rem;">{{ showLoginPw ? '👁️' : '🙈' }}</span></div></div>
