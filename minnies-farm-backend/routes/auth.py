@@ -9,7 +9,8 @@ from flask_jwt_extended import (
 from models import User
 from extensions import db, bcrypt, mail
 from flask_mail import Message
-import secrets, time, os
+import secrets, time, threading, os
+from functools import wraps
 
 auth_bp = Blueprint("auth", __name__)
 
@@ -18,25 +19,30 @@ RESET_TOKENS = {}
 VERIFY_TOKENS = {}
 
 
-# ── HELPER: Send email via Flask-Mail ─────────────────────────────
-def send_email_async(to_email, subject, html_content):
-    """Send email - synchronous for now to catch errors"""
-    try:
-        from flask import current_app
-        with current_app.app_context():
-            msg = Message(
-                subject=subject,
-                recipients=[to_email],
-                html=html_content
-            )
-            mail.send(msg)
-            print(f"✅ Email sent successfully to {to_email}")
-            return True
-    except Exception as e:
-        print(f"❌ Email sending failed to {to_email}: {str(e)}")
-        import traceback
-        traceback.print_exc()
-        return False
+# ── HELPER: Send email in background thread with app context ─────────────────
+def send_email_background(to_email, subject, html_content):
+    """Send email asynchronously in background thread"""
+    def _send_email():
+        try:
+            # Import app here to avoid circular imports
+            from app import create_app
+            app = create_app()
+            with app.app_context():
+                msg = Message(
+                    subject=subject,
+                    recipients=[to_email],
+                    html=html_content
+                )
+                mail.send(msg)
+                print(f"✅ Email sent successfully to {to_email}")
+        except Exception as e:
+            print(f"❌ Email sending failed to {to_email}: {str(e)}")
+            import traceback
+            traceback.print_exc()
+    
+    # Start email sending in background thread (don't wait for it)
+    thread = threading.Thread(target=_send_email, daemon=True)
+    thread.start()
 
 
 # ── REGISTER ──────────────────────────────────────────────────────────────────
@@ -66,7 +72,7 @@ def register():
     VERIFY_TOKENS[token] = {'user_id': user.id, 'expires': time.time() + 86400}
     verify_link = f"https://mdmorales-byte.github.io/minnies-farm-resort?verify_token={token}"
 
-    send_email_async(
+    send_email_background(
         data["email"],
         "Verify Your Email - Minnie's Farm Resort",
         f"""
@@ -199,7 +205,7 @@ def forgot_password():
         RESET_TOKENS[token] = {'user_id': user.id, 'expires': time.time() + 3600}
         reset_link = f"https://mdmorales-byte.github.io/minnies-farm-resort?reset_token={token}"
 
-        send_email_async(
+        send_email_background(
             email,
             "Reset Your Password - Minnie's Farm Resort",
             f"""
