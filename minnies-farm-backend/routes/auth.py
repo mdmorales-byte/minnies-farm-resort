@@ -34,7 +34,7 @@ def send_email_background(to_email, subject, html_content):
             
             sg = SendGridAPIClient(sg_key)
             message = Mail(
-                from_email=('Minnie\'s Farm Resort', 'noreply@example.com'),  # Use generic domain initially
+                from_email=('Minnie\'s Farm Resort', 'moralesmickdaniel7@gmail.com'),
                 to_emails=to_email,
                 subject=subject,
                 html_content=html_content
