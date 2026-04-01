@@ -8,7 +8,7 @@ from flask_jwt_extended import (
 )
 from models import User
 from extensions import db, bcrypt
-import secrets, time, threading, os
+import secrets, time, threading, os, re
 from sendgrid import SendGridAPIClient
 from sendgrid.helpers.mail import Mail
 
@@ -17,6 +17,12 @@ auth_bp = Blueprint("auth", __name__)
 BLOCKLIST = set()
 RESET_TOKENS = {}
 VERIFY_TOKENS = {}
+
+# ── EMAIL VALIDATION ──────────────────────────────────────────────────────────
+def is_valid_email(email):
+    """Validate email format using regex"""
+    pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+    return re.match(pattern, email) is not None
 
 
 # ── HELPER: Send email via SendGrid in background ─────────────────────────────
@@ -70,13 +76,19 @@ def register():
         if not data.get(field):
             return jsonify({"error": f"'{field}' is required."}), 400
 
-    if User.query.filter_by(email=data["email"]).first():
+    email = data["email"].strip().lower()
+    
+    # Validate email format
+    if not is_valid_email(email):
+        return jsonify({"error": "Please enter a valid email address (e.g., user@example.com)."}), 400
+
+    if User.query.filter_by(email=email).first():
         return jsonify({"error": "Email is already registered."}), 409
 
     hashed_pw = bcrypt.generate_password_hash(data["password"]).decode("utf-8")
     user = User(
         name        = data["name"],
-        email       = data["email"],
+        email       = email,  # Use normalized email
         password    = hashed_pw,
         role        = "guest",
         is_verified = True,  # Auto-verify on registration
@@ -98,7 +110,8 @@ def login():
     if not data.get("email") or not data.get("password"):
         return jsonify({"error": "Email and password are required."}), 400
 
-    user = User.query.filter_by(email=data["email"]).first()
+    email = data["email"].strip().lower()
+    user = User.query.filter_by(email=email).first()
 
     if not user or not bcrypt.check_password_hash(user.password, data["password"]):
         return jsonify({"error": "Invalid email or password."}), 401
@@ -194,6 +207,7 @@ def forgot_password():
     if not email:
         return jsonify({'error': 'Email is required.'}), 400
 
+    email = email.strip().lower()
     user = User.query.filter_by(email=email).first()
 
     if user:
