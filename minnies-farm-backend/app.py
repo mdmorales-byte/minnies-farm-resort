@@ -30,7 +30,17 @@ def create_app():
     bcrypt.init_app(app)
     mail.init_app(app)
     JWTManager(app)
-    CORS(app, origins=["http://127.0.0.1:5500", "http://localhost:5500", "https://mdmorales-byte.github.io"])
+    
+    # CORS configuration - allow frontend origins
+    CORS(app, 
+         origins=[
+             "http://127.0.0.1:5500", 
+             "http://localhost:5500",
+             "https://mdmorales-byte.github.io",
+             "https://mdmorales-byte.github.io/"  # with trailing slash
+         ],
+         supports_credentials=True,
+         allow_headers=['Content-Type', 'Authorization'])
 
     # Check if email is properly configured on startup
     if not os.getenv('MAIL_PASSWORD'):
