@@ -29,12 +29,18 @@ def send_email_background(to_email, subject, html_content):
                 print("❌ SENDGRID_API_KEY not set!")
                 return
             
+            if not sg_key.startswith('SG.'):
+                print(f"❌ SENDGRID_API_KEY format invalid! Key starts with: {sg_key[:5]}...")
+                return
+            
             # Debug: Show we're attempting to send
             print(f"📧 Attempting to send email to {to_email}...")
+            print(f"   Subject: {subject}")
+            print(f"   From: moralesmickdaniel7@gmail.com")
             
             sg = SendGridAPIClient(sg_key)
             message = Mail(
-                from_email=('Minnie\'s Farm Resort', 'moralesmickdaniel7@gmail.com'),
+                from_email='moralesmickdaniel7@gmail.com',
                 to_emails=to_email,
                 subject=subject,
                 html_content=html_content
@@ -43,7 +49,10 @@ def send_email_background(to_email, subject, html_content):
             print(f"✅ Email sent successfully to {to_email} (HTTP {response.status_code})")
         except Exception as e:
             print(f"❌ Email sending failed to {to_email}")
-            print(f"   Error: {str(e)}")
+            print(f"   Error Type: {type(e).__name__}")
+            print(f"   Error Message: {str(e)}")
+            if hasattr(e, 'body'):
+                print(f"   Response Body: {e.body}")
             import traceback
             traceback.print_exc()
     
@@ -82,17 +91,13 @@ def register():
     send_email_background(
         data["email"],
         "Verify Your Email - Minnie's Farm Resort",
-        f"""
-        <div style="font-family: Arial, sans-serif; max-width: 500px; margin: 0 auto;">
-            <h2 style="color: #1a2e2a;">🌿 Minnie's Farm Resort</h2>
-            <p>Hi {data["name"]},</p>
-            <p>Please verify your email to activate your account:</p>
-            <a href="{verify_link}" style="display:inline-block;padding:12px 24px;background:#2d6a5f;color:white;text-decoration:none;border-radius:8px;margin:16px 0;">
-                Verify My Email
-            </a>
-            <p style="color:#888;font-size:0.85rem;">This link expires in 24 hours.</p>
-        </div>
-        """
+        f"""<html><body>
+<h2>Minnie's Farm Resort</h2>
+<p>Hi {data["name"]},</p>
+<p>Please verify your email to activate your account by clicking the link below:</p>
+<p><a href="{verify_link}">Verify My Email</a></p>
+<p>This link expires in 24 hours.</p>
+</body></html>"""
     )
 
     return jsonify({"message": "Account created! Please check your email to verify your account."}), 201
@@ -215,17 +220,13 @@ def forgot_password():
         send_email_background(
             email,
             "Reset Your Password - Minnie's Farm Resort",
-            f"""
-            <div style="font-family: Arial, sans-serif; max-width: 500px; margin: 0 auto;">
-                <h2 style="color: #1a2e2a;">🌿 Minnie's Farm Resort</h2>
-                <p>Hi {user.name},</p>
-                <p>We received a request to reset your password. Click the button below:</p>
-                <a href="{reset_link}" style="display:inline-block;padding:12px 24px;background:#2d6a5f;color:white;text-decoration:none;border-radius:8px;margin:16px 0;">
-                    Reset My Password
-                </a>
-                <p style="color:#888;font-size:0.85rem;">This link expires in 1 hour.</p>
-            </div>
-            """
+            f"""<html><body>
+<h2>Minnie's Farm Resort</h2>
+<p>Hi {user.name},</p>
+<p>We received a request to reset your password. Click the link below:</p>
+<p><a href="{reset_link}">Reset My Password</a></p>
+<p>This link expires in 1 hour.</p>
+</body></html>"""
         )
 
     return jsonify({'message': 'If that email exists, a reset link has been sent.'}), 200
