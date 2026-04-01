@@ -68,20 +68,30 @@ def create_app():
                 if not sg_key:
                     print("❌ SENDGRID_API_KEY not configured!")
                     return
+                
+                if not sg_key.startswith('SG.'):
+                    print(f"❌ SENDGRID_API_KEY format invalid! Key starts with: {sg_key[:5]}...")
+                    return
                     
                 print("📧 Attempting to send test email...")
+                print(f"   To: mdmorales@byte.github.io")
+                print(f"   From: moralesmickdaniel7@gmail.com")
                 sg = SendGridAPIClient(sg_key)
                 test_email_addr = "mdmorales@byte.github.io"
                 msg = Mail(
-                    from_email=('Minnie\'s Farm Resort', 'moralesmickdaniel7@gmail.com'),
+                    from_email='moralesmickdaniel7@gmail.com',
                     to_emails=test_email_addr,
                     subject="Test Email - Minnie's Farm Resort",
-                    html_content="<h2>✅ Email sending is working!</h2><p>If you received this, email configuration is correct.</p>"
+                    html_content="<html><body><h2>Email Test</h2><p>If you received this, email configuration is correct.</p></body></html>"
                 )
                 response = sg.send(msg)
                 print(f"✅ Test email sent! HTTP {response.status_code}")
             except Exception as e:
-                print(f"❌ Test email failed: {str(e)}")
+                print(f"❌ Test email failed")
+                print(f"   Error Type: {type(e).__name__}")
+                print(f"   Error: {str(e)}")
+                if hasattr(e, 'body'):
+                    print(f"   Response Body: {e.body}")
                 import traceback
                 traceback.print_exc()
         
