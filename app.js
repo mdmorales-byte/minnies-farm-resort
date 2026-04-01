@@ -316,6 +316,14 @@ createApp({
     }
 
     function facebookLogin() {
+      // Check if Facebook SDK is loaded
+      if (typeof FB === 'undefined') {
+        authMsg.value = 'Facebook SDK is loading... Please try again in a moment.';
+        authMsgType.value = 'error';
+        authMsgKey.value++;
+        return;
+      }
+
       FB.login(async function(response) {
         if (!response.authResponse) {
           authMsg.value = 'Facebook login was cancelled.';
