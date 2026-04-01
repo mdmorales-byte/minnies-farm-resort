@@ -67,17 +67,26 @@ def create_app():
     @app.route("/api/test-email")
     def test_email():
         from flask_mail import Message
-        try:
-            test_email_addr = "mdmorales@byte.github.io"
-            msg = Message(
-                subject="Test Email - Minnie's Farm Resort",
-                recipients=[test_email_addr],
-                html="<h2>✅ Email sending is working!</h2><p>If you received this, email configuration is correct.</p>"
-            )
-            mail.send(msg)
-            return {"status": "✅ Test email sent successfully!", "sent_to": test_email_addr}, 200
-        except Exception as e:
-            return {"status": "❌ Email sending failed!", "error": str(e)}, 500
+        import threading
+        
+        def _send_test():
+            try:
+                test_email_addr = "mdmorales@byte.github.io"
+                msg = Message(
+                    subject="Test Email - Minnie's Farm Resort",
+                    recipients=[test_email_addr],
+                    html="<h2>✅ Email sending is working!</h2><p>If you received this, email configuration is correct.</p>"
+                )
+                mail.send(msg)
+                print(f"✅ Test email sent to {test_email_addr}")
+            except Exception as e:
+                print(f"❌ Test email failed: {str(e)}")
+        
+        # Send in background thread so it doesn't block
+        thread = threading.Thread(target=_send_test, daemon=True)
+        thread.start()
+        
+        return {"status": "✅ Test email queued! Check logs and your inbox shortly."}, 200
 
     @app.route("/api/seed-staff")
     def seed_staff():
