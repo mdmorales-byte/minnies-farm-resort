@@ -146,7 +146,7 @@ def me():
 @auth_bp.route('/google', methods=['POST'])
 def google_login():
     data = request.get_json()
-    email = data.get('email')
+    email = data.get('email', '').strip().lower()
     name = data.get('name')
     google_id = data.get('google_id')
 
@@ -174,7 +174,7 @@ def google_login():
 @auth_bp.route('/facebook', methods=['POST'])
 def facebook_login():
     data = request.get_json()
-    email = data.get('email')
+    email = data.get('email', '').strip().lower()
     name = data.get('name')
     facebook_id = data.get('facebook_id')
 

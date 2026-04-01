@@ -260,8 +260,9 @@ createApp({
         scope: 'email profile',
         callback: async (tokenResponse) => {
           if (tokenResponse.error) {
-            authMsg.value = 'Google login failed: ' + tokenResponse.error;
+            authMsg.value = 'Google login was cancelled.';
             authMsgType.value = 'error';
+            authMsgKey.value++;
             return;
           }
           // Get user info from Google
@@ -270,27 +271,44 @@ createApp({
               headers: { Authorization: `Bearer ${tokenResponse.access_token}` }
             });
             const googleUser = await res.json();
+            
+            if (!googleUser.email) {
+              authMsg.value = 'Could not get email from Google.';
+              authMsgType.value = 'error';
+              authMsgKey.value++;
+              return;
+            }
+            
             // Send to our backend
             const backendRes = await fetch(`${API_URL}/auth/google`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
-                email: googleUser.email,
+                email: googleUser.email.toLowerCase(),
                 name: googleUser.name,
                 google_id: googleUser.sub
               })
             });
             const data = await backendRes.json();
-            if (!backendRes.ok) { authMsg.value = data.error || 'Google login failed'; authMsgType.value = 'error'; return; }
+            
+            if (!backendRes.ok) { 
+              authMsg.value = data.error || 'Google login failed'; 
+              authMsgType.value = 'error';
+              authMsgKey.value++;
+              return; 
+            }
+            
             token.value = data.token;
             localStorage.setItem('token', data.token);
             currentUser.value = data.user;
-            authMsg.value = 'Logged in with Google!';
+            authMsg.value = '✅ Logged in with Google!';
             authMsgType.value = 'success';
+            showToast(`Welcome, ${data.user.name}! 🎉`, 'success', 3000);
             setTimeout(() => navigate(data.user.role === 'staff' ? 'dashboard' : 'rooms'), 800);
           } catch (err) {
-            authMsg.value = 'Google login error: ' + err.message;
+            authMsg.value = 'Connection error: ' + err.message;
             authMsgType.value = 'error';
+            authMsgKey.value++;
           }
         }
       });
@@ -299,43 +317,62 @@ createApp({
 
     function facebookLogin() {
       FB.login(async function(response) {
-        if (response.authResponse) {
-          try {
-            // Get user info from Facebook
-            FB.api('/me', { fields: 'name,email' }, async function(fbUser) {
+        if (!response.authResponse) {
+          authMsg.value = 'Facebook login was cancelled.';
+          authMsgType.value = 'error';
+          authMsgKey.value++;
+          return;
+        }
+
+        try {
+          // Get user info from Facebook
+          FB.api('/me', { fields: 'id,name,email' }, async function(fbUser) {
+            try {
               if (!fbUser.email) {
-                authMsg.value = 'Could not get email from Facebook. Please allow email permission.';
+                authMsg.value = 'Could not get email from Facebook. Please check your privacy settings.';
                 authMsgType.value = 'error';
+                authMsgKey.value++;
                 return;
               }
+              
               // Send to our backend
               const backendRes = await fetch(`${API_URL}/auth/facebook`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                  email: fbUser.email,
+                  email: fbUser.email.toLowerCase(),
                   name: fbUser.name,
-                  facebook_id: response.authResponse.userID
+                  facebook_id: fbUser.id
                 })
               });
               const data = await backendRes.json();
-              if (!backendRes.ok) { authMsg.value = data.error || 'Facebook login failed'; authMsgType.value = 'error'; return; }
+              
+              if (!backendRes.ok) { 
+                authMsg.value = data.error || 'Facebook login failed'; 
+                authMsgType.value = 'error';
+                authMsgKey.value++;
+                return; 
+              }
+              
               token.value = data.token;
               localStorage.setItem('token', data.token);
               currentUser.value = data.user;
-              authMsg.value = 'Logged in with Facebook!';
+              authMsg.value = '✅ Logged in with Facebook!';
               authMsgType.value = 'success';
+              showToast(`Welcome, ${data.user.name}! 🎉`, 'success', 3000);
               setTimeout(() => navigate(data.user.role === 'staff' ? 'dashboard' : 'rooms'), 800);
-            });
-          } catch (err) {
-            authMsg.value = 'Facebook login error: ' + err.message;
-            authMsgType.value = 'error';
-          }
-        } else {
-          authMsg.value = 'Facebook login was cancelled.';
+            } catch (err) {
+              authMsg.value = 'Connection error: ' + err.message;
+              authMsgType.value = 'error';
+              authMsgKey.value++;
+            }
+          });
+        } catch (err) {
+          authMsg.value = 'Facebook login error: ' + err.message;
           authMsgType.value = 'error';
+          authMsgKey.value++;
         }
-      }, { scope: 'email,public_profile' });
+      }, { scope: 'email' });
     }
 
     async function doLogin() {
