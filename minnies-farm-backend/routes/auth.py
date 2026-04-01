@@ -7,10 +7,10 @@ from flask_jwt_extended import (
     create_access_token, jwt_required, get_jwt_identity, get_jwt
 )
 from models import User
-from extensions import db, bcrypt, mail
-from flask_mail import Message
+from extensions import db, bcrypt
 import secrets, time, threading, os
-from functools import wraps
+from sendgrid import SendGridAPIClient
+from sendgrid.helpers.mail import Mail
 
 auth_bp = Blueprint("auth", __name__)
 
@@ -19,22 +19,25 @@ RESET_TOKENS = {}
 VERIFY_TOKENS = {}
 
 
-# ── HELPER: Send email in background thread with app context ─────────────────
+# ── HELPER: Send email via SendGrid in background ─────────────────────────────
 def send_email_background(to_email, subject, html_content):
-    """Send email asynchronously in background thread"""
+    """Send email asynchronously in background thread via SendGrid"""
     def _send_email():
         try:
-            # Import app here to avoid circular imports
-            from app import create_app
-            app = create_app()
-            with app.app_context():
-                msg = Message(
-                    subject=subject,
-                    recipients=[to_email],
-                    html=html_content
-                )
-                mail.send(msg)
-                print(f"✅ Email sent successfully to {to_email}")
+            sg_key = os.getenv('SENDGRID_API_KEY')
+            if not sg_key:
+                print("❌ SENDGRID_API_KEY not set! Email sending will not work.")
+                return
+            
+            sg = SendGridAPIClient(sg_key)
+            message = Mail(
+                from_email=('Minnie\'s Farm Resort', 'noreply@minnies-farm-resort.com'),
+                to_emails=to_email,
+                subject=subject,
+                html_content=html_content
+            )
+            response = sg.send(message)
+            print(f"✅ Email sent successfully to {to_email} (Status: {response.status_code})")
         except Exception as e:
             print(f"❌ Email sending failed to {to_email}: {str(e)}")
             import traceback

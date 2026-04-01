@@ -1,7 +1,7 @@
 from flask import Flask
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager
-from extensions import db, bcrypt, mail
+from extensions import db, bcrypt
 from dotenv import load_dotenv
 import os
 
@@ -19,16 +19,8 @@ def create_app():
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
     app.config["JWT_SECRET_KEY"] = os.getenv("JWT_SECRET_KEY", "dev-secret")
 
-    app.config['MAIL_SERVER'] = 'smtp.gmail.com'
-    app.config['MAIL_PORT'] = 587
-    app.config['MAIL_USE_TLS'] = True
-    app.config['MAIL_USERNAME'] = 'moralesmickdaniel7@gmail.com'
-    app.config['MAIL_PASSWORD'] = os.getenv('MAIL_PASSWORD')
-    app.config['MAIL_DEFAULT_SENDER'] = ("Minnie's Farm Resort", 'moralesmickdaniel7@gmail.com')
-
     db.init_app(app)
     bcrypt.init_app(app)
-    mail.init_app(app)
     JWTManager(app)
     
     # CORS configuration - allow frontend origins
@@ -43,10 +35,10 @@ def create_app():
          allow_headers=['Content-Type', 'Authorization'])
 
     # Check if email is properly configured on startup
-    if not os.getenv('MAIL_PASSWORD'):
-        print("⚠️  WARNING: MAIL_PASSWORD environment variable is NOT SET! Email sending will not work.")
+    if not os.getenv('SENDGRID_API_KEY'):
+        print("⚠️  WARNING: SENDGRID_API_KEY environment variable is NOT SET! Email sending will not work.")
     else:
-        print("✅ MAIL_PASSWORD is configured. Email sending should work.")
+        print("✅ SENDGRID_API_KEY is configured. Email sending should work.")
 
     from routes.auth import auth_bp
     from routes.rooms import rooms_bp
@@ -66,19 +58,27 @@ def create_app():
 
     @app.route("/api/test-email")
     def test_email():
-        from flask_mail import Message
+        from sendgrid import SendGridAPIClient
+        from sendgrid.helpers.mail import Mail
         import threading
         
         def _send_test():
             try:
+                sg_key = os.getenv('SENDGRID_API_KEY')
+                if not sg_key:
+                    print("❌ SENDGRID_API_KEY not configured!")
+                    return
+                    
+                sg = SendGridAPIClient(sg_key)
                 test_email_addr = "mdmorales@byte.github.io"
-                msg = Message(
+                msg = Mail(
+                    from_email=('Minnie\'s Farm Resort', 'noreply@minnies-farm-resort.com'),
+                    to_emails=test_email_addr,
                     subject="Test Email - Minnie's Farm Resort",
-                    recipients=[test_email_addr],
-                    html="<h2>✅ Email sending is working!</h2><p>If you received this, email configuration is correct.</p>"
+                    html_content="<h2>✅ Email sending is working!</h2><p>If you received this, email configuration is correct.</p>"
                 )
-                mail.send(msg)
-                print(f"✅ Test email sent to {test_email_addr}")
+                response = sg.send(msg)
+                print(f"✅ Test email sent! Status: {response.status_code}")
             except Exception as e:
                 print(f"❌ Test email failed: {str(e)}")
         
