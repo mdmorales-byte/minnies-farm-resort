@@ -3,28 +3,22 @@ from flask_cors import CORS
 from flask_jwt_extended import JWTManager
 from extensions import db, bcrypt, mail
 from dotenv import load_dotenv
-from flask_mail import Message
-from extensions import mail
-import secrets, time
 import os
 
 load_dotenv()
 
 def create_app():
     app = Flask(__name__)
-    # Database connection pooling - NullPool for Render's strict connection limits
+
     from sqlalchemy.pool import NullPool
-    app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
-        "poolclass": NullPool,
-    }
+    app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {"poolclass": NullPool}
     app.config["SQLALCHEMY_DATABASE_URI"] = (
         f"mysql+pymysql://{os.getenv('DB_USER')}:{os.getenv('DB_PASSWORD')}"
         f"@{os.getenv('DB_HOST')}:{os.getenv('DB_PORT', 3306)}/{os.getenv('DB_NAME')}"
     )
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
     app.config["JWT_SECRET_KEY"] = os.getenv("JWT_SECRET_KEY", "dev-secret")
-    
-    # Mail configuration
+
     app.config['MAIL_SERVER'] = 'smtp.gmail.com'
     app.config['MAIL_PORT'] = 587
     app.config['MAIL_USE_TLS'] = True
@@ -66,7 +60,8 @@ def create_app():
             name="Mick Daniel Morales",
             email="staff@resort.com",
             password=bcrypt.generate_password_hash("staff123").decode(),
-            role="staff"
+            role="staff",
+            is_verified=True
         )
         db.session.add(new_staff)
         db.session.commit()
@@ -84,9 +79,9 @@ def create_app():
         db.session.add_all(users)
         rooms = [
             Room(room_number="R01", name="Single Room", type="Standard", capacity=1, price_per_night=1000, sqm=28, is_available=True, description="Our Single Room is a refined haven for the independent traveler. Designed to offer a peaceful escape, this room features a plush bed and large windows that invite the morning sun. It is the perfect spot to unplug, enjoy a quiet morning coffee, and recharge in a space that feels entirely your own.", amenities="Free Wi-Fi, Air Conditioning, Flat-screen TV", room_status="available"),
-            Room(room_number="R02", name="Kids Room", type="Themed", capacity=5, price_per_night=1500, sqm=38, is_available=True, description="The Kids Room is a vibrant, imaginative space designed specifically for our youngest guests. With playful decor and comfortable twin or bunk beds, it’s a room that turns bedtime into part of the vacation fun. It provides a safe, energetic environment where children can relax after a day of outdoor play and discovery.", amenities="Free Wi-Fi, Pool View, Bathtub", room_status="available"),
-            Room(room_number="R03", name="Double Room", type="Deluxe", capacity=2, price_per_night=2500, sqm=60, is_available=True, description="Perfect for friends or couples, the Double Room offers a spacious layout with flexible bedding options. Thoughtfully appointed with warm textures and modern comforts, this room serves as a relaxing home base. Whether you’re resting between activities or winding down for the night, the cozy ambiance ensures a refreshing stay for two.", amenities="Butler Service, Free Wi-Fi", room_status="available"),
-            Room(room_number="R04", name="Family Room", type="Suite", capacity=10, price_per_night=4500, sqm=120, is_available=True, description="Our Family Room is designed for connection and ease, offering ample space for the whole group to gather comfortably. Featuring multiple sleeping areas and a cozy lounge corner, it allows families to stay close while still having room to breathe. It’s a generous, welcoming suite built for making memories and sharing stories after a full day of resort fun.", amenities="BBQ Area, Butler Service, Free Wi-Fi", room_status="available"),
+            Room(room_number="R02", name="Kids Room", type="Themed", capacity=5, price_per_night=1500, sqm=38, is_available=True, description="The Kids Room is a vibrant, imaginative space designed specifically for our youngest guests. With playful decor and comfortable twin or bunk beds, it's a room that turns bedtime into part of the vacation fun. It provides a safe, energetic environment where children can relax after a day of outdoor play and discovery.", amenities="Free Wi-Fi, Pool View, Bathtub", room_status="available"),
+            Room(room_number="R03", name="Double Room", type="Deluxe", capacity=2, price_per_night=2500, sqm=60, is_available=True, description="Perfect for friends or couples, the Double Room offers a spacious layout with flexible bedding options. Thoughtfully appointed with warm textures and modern comforts, this room serves as a relaxing home base. Whether you're resting between activities or winding down for the night, the cozy ambiance ensures a refreshing stay for two.", amenities="Butler Service, Free Wi-Fi", room_status="available"),
+            Room(room_number="R04", name="Family Room", type="Suite", capacity=10, price_per_night=4500, sqm=120, is_available=True, description="Our Family Room is designed for connection and ease, offering ample space for the whole group to gather comfortably. Featuring multiple sleeping areas and a cozy lounge corner, it allows families to stay close while still having room to breathe. It's a generous, welcoming suite built for making memories and sharing stories after a full day of resort fun.", amenities="BBQ Area, Butler Service, Free Wi-Fi", room_status="available"),
         ]
         db.session.add_all(rooms)
         services = [
@@ -98,8 +93,7 @@ def create_app():
         db.session.commit()
         return {"status": "Database seeded with users, rooms and services!"}, 200
 
-    with app.app_context():
-        db.create_all()
+    # ── Removed db.create_all() from here to avoid connection on startup ──
 
     return app
 
