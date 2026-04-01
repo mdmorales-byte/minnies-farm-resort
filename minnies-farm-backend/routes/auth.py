@@ -30,9 +30,11 @@ def send_email_async(to_email, subject, html_content):
                     html=html_content
                 )
                 mail.send(msg)
-                print(f"Email sent to {to_email}")
+                print(f"✅ Email sent successfully to {to_email}")
         except Exception as e:
-            print(f"Email sending failed: {e}")
+            print(f"❌ Email sending failed to {to_email}: {str(e)}")
+            import traceback
+            traceback.print_exc()
     threading.Thread(target=_send).start()
     threading.Thread(target=_send).start()
 
