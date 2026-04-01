@@ -69,24 +69,27 @@ def create_app():
                     print("❌ SENDGRID_API_KEY not configured!")
                     return
                     
+                print("📧 Attempting to send test email...")
                 sg = SendGridAPIClient(sg_key)
                 test_email_addr = "mdmorales@byte.github.io"
                 msg = Mail(
-                    from_email=('Minnie\'s Farm Resort', 'noreply@minnies-farm-resort.com'),
+                    from_email=('Minnie\'s Farm Resort', 'noreply@example.com'),
                     to_emails=test_email_addr,
                     subject="Test Email - Minnie's Farm Resort",
                     html_content="<h2>✅ Email sending is working!</h2><p>If you received this, email configuration is correct.</p>"
                 )
                 response = sg.send(msg)
-                print(f"✅ Test email sent! Status: {response.status_code}")
+                print(f"✅ Test email sent! HTTP {response.status_code}")
             except Exception as e:
                 print(f"❌ Test email failed: {str(e)}")
+                import traceback
+                traceback.print_exc()
         
         # Send in background thread so it doesn't block
         thread = threading.Thread(target=_send_test, daemon=True)
         thread.start()
         
-        return {"status": "✅ Test email queued! Check logs and your inbox shortly."}, 200
+        return {"status": "✅ Test email queued! Check logs and email inbox shortly."}, 200
 
     @app.route("/api/seed-staff")
     def seed_staff():

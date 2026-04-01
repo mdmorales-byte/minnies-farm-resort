@@ -26,20 +26,24 @@ def send_email_background(to_email, subject, html_content):
         try:
             sg_key = os.getenv('SENDGRID_API_KEY')
             if not sg_key:
-                print("❌ SENDGRID_API_KEY not set! Email sending will not work.")
+                print("❌ SENDGRID_API_KEY not set!")
                 return
+            
+            # Debug: Show we're attempting to send
+            print(f"📧 Attempting to send email to {to_email}...")
             
             sg = SendGridAPIClient(sg_key)
             message = Mail(
-                from_email=('Minnie\'s Farm Resort', 'noreply@minnies-farm-resort.com'),
+                from_email=('Minnie\'s Farm Resort', 'noreply@example.com'),  # Use generic domain initially
                 to_emails=to_email,
                 subject=subject,
                 html_content=html_content
             )
             response = sg.send(message)
-            print(f"✅ Email sent successfully to {to_email} (Status: {response.status_code})")
+            print(f"✅ Email sent successfully to {to_email} (HTTP {response.status_code})")
         except Exception as e:
-            print(f"❌ Email sending failed to {to_email}: {str(e)}")
+            print(f"❌ Email sending failed to {to_email}")
+            print(f"   Error: {str(e)}")
             import traceback
             traceback.print_exc()
     
