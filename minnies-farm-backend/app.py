@@ -32,6 +32,12 @@ def create_app():
     JWTManager(app)
     CORS(app, origins=["http://127.0.0.1:5500", "http://localhost:5500", "https://mdmorales-byte.github.io"])
 
+    # Check if email is properly configured on startup
+    if not os.getenv('MAIL_PASSWORD'):
+        print("⚠️  WARNING: MAIL_PASSWORD environment variable is NOT SET! Email sending will not work.")
+    else:
+        print("✅ MAIL_PASSWORD is configured. Email sending should work.")
+
     from routes.auth import auth_bp
     from routes.rooms import rooms_bp
     from routes.bookings import bookings_bp
@@ -47,6 +53,21 @@ def create_app():
     @app.route("/api/health")
     def health():
         return {"status": "ok", "resort": "Minnies Farm Resort"}, 200
+
+    @app.route("/api/test-email")
+    def test_email():
+        from flask_mail import Message
+        try:
+            test_email_addr = "mdmorales@byte.github.io"
+            msg = Message(
+                subject="Test Email - Minnie's Farm Resort",
+                recipients=[test_email_addr],
+                html="<h2>✅ Email sending is working!</h2><p>If you received this, email configuration is correct.</p>"
+            )
+            mail.send(msg)
+            return {"status": "✅ Test email sent successfully!", "sent_to": test_email_addr}, 200
+        except Exception as e:
+            return {"status": "❌ Email sending failed!", "error": str(e)}, 500
 
     @app.route("/api/seed-staff")
     def seed_staff():

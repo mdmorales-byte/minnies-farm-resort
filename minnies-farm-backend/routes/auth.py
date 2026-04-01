@@ -9,7 +9,7 @@ from flask_jwt_extended import (
 from models import User
 from extensions import db, bcrypt, mail
 from flask_mail import Message
-import secrets, time, threading, os
+import secrets, time, os
 
 auth_bp = Blueprint("auth", __name__)
 
@@ -20,6 +20,7 @@ VERIFY_TOKENS = {}
 
 # ── HELPER: Send email via Flask-Mail ─────────────────────────────
 def send_email_async(to_email, subject, html_content):
+    """Send email - synchronous for now to catch errors"""
     try:
         from flask import current_app
         with current_app.app_context():
@@ -30,11 +31,12 @@ def send_email_async(to_email, subject, html_content):
             )
             mail.send(msg)
             print(f"✅ Email sent successfully to {to_email}")
+            return True
     except Exception as e:
         print(f"❌ Email sending failed to {to_email}: {str(e)}")
         import traceback
         traceback.print_exc()
-    threading.Thread(target=_send).start()
+        return False
 
 
 # ── REGISTER ──────────────────────────────────────────────────────────────────
