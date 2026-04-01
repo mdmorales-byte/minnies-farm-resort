@@ -79,28 +79,15 @@ def register():
         email       = data["email"],
         password    = hashed_pw,
         role        = "guest",
-        is_verified = False,
+        is_verified = True,  # Auto-verify on registration
     )
     db.session.add(user)
     db.session.commit()
 
-    token = secrets.token_urlsafe(32)
-    VERIFY_TOKENS[token] = {'user_id': user.id, 'expires': time.time() + 86400}
-    verify_link = f"https://mdmorales-byte.github.io/minnies-farm-resort?verify_token={token}"
+    # Email verification temporarily disabled - user auto-verified on registration
+    # TODO: Re-enable email verification once SendGrid is configured properly
 
-    send_email_background(
-        data["email"],
-        "Verify Your Email - Minnie's Farm Resort",
-        f"""<html><body>
-<h2>Minnie's Farm Resort</h2>
-<p>Hi {data["name"]},</p>
-<p>Please verify your email to activate your account by clicking the link below:</p>
-<p><a href="{verify_link}">Verify My Email</a></p>
-<p>This link expires in 24 hours.</p>
-</body></html>"""
-    )
-
-    return jsonify({"message": "Account created! Please check your email to verify your account."}), 201
+    return jsonify({"message": "Account created! You can now sign in."}), 201
 
 
 # ── LOGIN ─────────────────────────────────────────────────────────────────────
@@ -115,9 +102,6 @@ def login():
 
     if not user or not bcrypt.check_password_hash(user.password, data["password"]):
         return jsonify({"error": "Invalid email or password."}), 401
-
-    if not user.is_verified:
-        return jsonify({"error": "Please verify your email before signing in."}), 401
 
     token = create_access_token(identity=str(user.id))
     return jsonify({

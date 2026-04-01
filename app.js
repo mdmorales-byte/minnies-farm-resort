@@ -366,10 +366,10 @@ createApp({
         });
         const data = await res.json();
         if (!res.ok) { authMsg.value = data.error || 'Registration failed'; authMsgType.value = 'error'; return; }
-        // Success: account created, must verify email
-        authMsg.value = '✅ Account created! Check your email to verify your account before signing in.';
+        // Success: account created, user is verified and can login
+        authMsg.value = '✅ Account created! You can now sign in.';
         authMsgType.value = 'success';
-        showToast('Check your email to verify your account! 📧', 'success', 4000);
+        showToast('Account created! Sign in with your credentials. 🎉', 'success', 3000);
         regForm.value = { name: '', email: '', password: '', confirm: '', role: 'guest' };
         // Switch to login tab after 3 seconds
         setTimeout(() => {
