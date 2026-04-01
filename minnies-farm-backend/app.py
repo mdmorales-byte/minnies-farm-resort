@@ -12,12 +12,12 @@ load_dotenv()
 
 def create_app():
     app = Flask(__name__)
-    # Database connection pooling
+    # Database connection pooling - optimized for Render's MySQL limits
     app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
-        "pool_size": 1,
+        "pool_size": 2,
         "max_overflow": 0,
-        "pool_timeout": 30,
-        "pool_recycle": 1800,
+        "pool_pre_ping": True,
+        "pool_recycle": 3600,
     }
     app.config["SQLALCHEMY_DATABASE_URI"] = (
         f"mysql+pymysql://{os.getenv('DB_USER')}:{os.getenv('DB_PASSWORD')}"
