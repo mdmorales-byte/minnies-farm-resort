@@ -7,10 +7,9 @@ from flask_jwt_extended import (
     create_access_token, jwt_required, get_jwt_identity, get_jwt
 )
 from models import User
-from extensions import db, bcrypt
+from extensions import db, bcrypt, mail
+from flask_mail import Message
 import secrets, time, threading, os
-from sendgrid import SendGridAPIClient
-from sendgrid.helpers.mail import Mail
 
 auth_bp = Blueprint("auth", __name__)
 
@@ -19,21 +18,22 @@ RESET_TOKENS = {}
 VERIFY_TOKENS = {}
 
 
-# ── HELPER: Send email via SendGrid in background ─────────────────────────────
+# ── HELPER: Send email via Flask-Mail in background ─────────────────────────────
 def send_email_async(to_email, subject, html_content):
     def _send():
         try:
-            message = Mail(
-                from_email=("Minnie's Farm Resort", "moralesmickdaniel7@gmail.com"),
-                to_emails=to_email,
-                subject=subject,
-                html_content=html_content
-            )
-            sg = SendGridAPIClient(os.getenv('SENDGRID_API_KEY'))
-            sg.send(message)
-            print(f"Email sent to {to_email}")
+            from flask import current_app
+            with current_app.app_context():
+                msg = Message(
+                    subject=subject,
+                    recipients=[to_email],
+                    html=html_content
+                )
+                mail.send(msg)
+                print(f"Email sent to {to_email}")
         except Exception as e:
             print(f"Email sending failed: {e}")
+    threading.Thread(target=_send).start()
     threading.Thread(target=_send).start()
 
 
