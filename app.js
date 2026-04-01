@@ -99,9 +99,9 @@ createApp({
           resetMsg.value = data.error || 'Reset failed.';
           resetMsgType.value = 'error';
         } else {
-          resetMsg.value = 'Password reset successfully! You can now sign in.';
+          resetMsg.value = '✅ Password reset successfully! You can now sign in with your new password.';
           resetMsgType.value = 'success';
-          setTimeout(() => { showResetPassword.value = false; navigate('auth'); }, 2000);
+          setTimeout(() => { showResetPassword.value = false; navigate('auth'); }, 2500);
         }
       } catch (err) {
         resetMsg.value = 'Connection error: ' + err.message;
@@ -122,9 +122,10 @@ createApp({
           forgotMsg.value = data.error || 'Something went wrong.';
           forgotMsgType.value = 'error';
         } else {
-          forgotMsg.value = 'Password reset link sent! Check your email.';
+          forgotMsg.value = '✅ Password reset link has been sent to your email! Check your inbox.';
           forgotMsgType.value = 'success';
           forgotEmail.value = '';
+          setTimeout(() => { showForgotPassword.value = false; }, 2500);
         }
       } catch (err) {
         forgotMsg.value = 'Connection error: ' + err.message;
@@ -350,18 +351,15 @@ createApp({
         });
         const data = await res.json();
         if (!res.ok) { authMsg.value = data.error || 'Registration failed'; authMsgType.value = 'error'; return; }
-        token.value = data.token;
-        localStorage.setItem('token', data.token);
-        currentUser.value = data.user;
-        authMsg.value = 'Account created! Welcome aboard.';
+        // Success: account created, must verify email
+        authMsg.value = '✅ Account created! Check your email to verify your account before signing in.';
         authMsgType.value = 'success';
         regForm.value = { name: '', email: '', password: '', confirm: '', role: 'guest' };
-        token.value = '';
-        currentUser.value = null;
-        localStorage.removeItem('token');
+        // Switch to login tab after 3 seconds
         setTimeout(() => {
           authTab.value = 'login';
-        }, 2000);
+          authMsg.value = '';
+        }, 3000);
       } catch (err) { authMsg.value = 'Connection error: ' + err.message; authMsgType.value = 'error'; }
       loading.value = false;
     }
