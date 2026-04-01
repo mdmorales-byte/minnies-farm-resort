@@ -113,6 +113,15 @@ createApp({
 
     async function doForgotPassword() {
       if (!forgotEmail.value) return;
+      
+      // Validate email format
+      const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+      if (!emailRegex.test(forgotEmail.value)) {
+        forgotMsg.value = 'Please enter a valid email address.';
+        forgotMsgType.value = 'error';
+        return;
+      }
+      
       try {
         const res = await fetch(`${API_URL}/auth/forgot-password`, {
           method: 'POST',
@@ -357,6 +366,13 @@ createApp({
       if (regForm.value.password !== regForm.value.confirm) {
         authMsg.value = 'Passwords do not match.'; authMsgType.value = 'error'; return;
       }
+      
+      // Validate email format
+      const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+      if (!emailRegex.test(regForm.value.email)) {
+        authMsg.value = 'Please enter a valid email address (e.g., user@example.com).'; authMsgType.value = 'error'; return;
+      }
+      
       loading.value = true;
       try {
         const res = await fetch(`${API_URL}/auth/register`, {
