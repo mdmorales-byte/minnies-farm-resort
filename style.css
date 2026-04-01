@@ -424,9 +424,38 @@
       border-radius: 8px;
       font-size: 0.85rem;
       margin-bottom: 1rem;
+      animation: alertFadeIn 0.3s ease;
     }
     .alert-success { background: rgba(45,106,95,0.12); color: var(--teal); border: 1px solid rgba(45,106,95,0.3); }
-    .alert-error { background: rgba(192,57,43,0.1); color: var(--danger); border: 1px solid rgba(192,57,43,0.25); }
+    .alert-error { 
+      background: rgba(192,57,43,0.1); 
+      color: var(--danger); 
+      border: 1px solid rgba(192,57,43,0.25);
+      animation: alertShake 0.5s ease, alertFadeIn 0.3s ease;
+    }
+
+    @keyframes alertFadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(-10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes alertShake {
+      0%, 100% {
+        transform: translateX(0);
+      }
+      10%, 30%, 50%, 70%, 90% {
+        transform: translateX(-5px);
+      }
+      20%, 40%, 60%, 80% {
+        transform: translateX(5px);
+      }
+    }
 
     /* ── DASHBOARD ── */
     .dashboard-layout { display: grid; grid-template-columns: 260px 1fr; gap: 2rem; align-items: start; }
