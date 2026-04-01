@@ -18,24 +18,22 @@ RESET_TOKENS = {}
 VERIFY_TOKENS = {}
 
 
-# ── HELPER: Send email via Flask-Mail in background ─────────────────────────────
+# ── HELPER: Send email via Flask-Mail ─────────────────────────────
 def send_email_async(to_email, subject, html_content):
-    def _send():
-        try:
-            from flask import current_app
-            with current_app.app_context():
-                msg = Message(
-                    subject=subject,
-                    recipients=[to_email],
-                    html=html_content
-                )
-                mail.send(msg)
-                print(f"✅ Email sent successfully to {to_email}")
-        except Exception as e:
-            print(f"❌ Email sending failed to {to_email}: {str(e)}")
-            import traceback
-            traceback.print_exc()
-    threading.Thread(target=_send).start()
+    try:
+        from flask import current_app
+        with current_app.app_context():
+            msg = Message(
+                subject=subject,
+                recipients=[to_email],
+                html=html_content
+            )
+            mail.send(msg)
+            print(f"✅ Email sent successfully to {to_email}")
+    except Exception as e:
+        print(f"❌ Email sending failed to {to_email}: {str(e)}")
+        import traceback
+        traceback.print_exc()
     threading.Thread(target=_send).start()
 
 
