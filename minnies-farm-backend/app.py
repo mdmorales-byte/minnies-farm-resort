@@ -73,7 +73,7 @@ def create_app():
                 sg = SendGridAPIClient(sg_key)
                 test_email_addr = "mdmorales@byte.github.io"
                 msg = Mail(
-                    from_email=('Minnie\'s Farm Resort', 'noreply@example.com'),
+                    from_email=('Minnie\'s Farm Resort', 'moralesmickdaniel7@gmail.com'),
                     to_emails=test_email_addr,
                     subject="Test Email - Minnie's Farm Resort",
                     html_content="<h2>✅ Email sending is working!</h2><p>If you received this, email configuration is correct.</p>"
