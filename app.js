@@ -20,6 +20,7 @@ createApp({
     const pendingDeleteBookingId = ref(null);
     const showDeleteRoomModal = ref(false);
     const pendingDeleteRoom = ref(null);
+    const toasts = ref([]);
 
     const today = new Date().toISOString().split('T')[0];
 
@@ -101,6 +102,7 @@ createApp({
         } else {
           resetMsg.value = '✅ Password reset successfully! You can now sign in with your new password.';
           resetMsgType.value = 'success';
+          showToast('Password updated! Sign in with your new password. 🔐', 'success', 4000);
           setTimeout(() => { showResetPassword.value = false; navigate('auth'); }, 2500);
         }
       } catch (err) {
@@ -124,6 +126,7 @@ createApp({
         } else {
           forgotMsg.value = '✅ Password reset link has been sent to your email! Check your inbox.';
           forgotMsgType.value = 'success';
+          showToast('Check your email for the reset link! 📧', 'success', 4000);
           forgotEmail.value = '';
           setTimeout(() => { showForgotPassword.value = false; }, 2500);
         }
@@ -216,6 +219,17 @@ createApp({
     ]);
 
     // ── NAVIGATION ─────────────────────────────────────────────────────────────
+    function showToast(message, type = 'success', duration = 3000) {
+      const toastObj = { message, type, removing: false };
+      toasts.value.push(toastObj);
+      setTimeout(() => {
+        toastObj.removing = true;
+        setTimeout(() => {
+          toasts.value.splice(toasts.value.indexOf(toastObj), 1);
+        }, 300);
+      }, duration);
+    }
+
     function navigate(p) {
       page.value = p;
       authMsg.value = '';
@@ -327,8 +341,9 @@ createApp({
         token.value = data.token;
         localStorage.setItem('token', data.token);
         currentUser.value = data.user;
-        authMsg.value = 'Login successful!';
+        authMsg.value = '✅ Login successful!';
         authMsgType.value = 'success';
+        showToast(`Welcome back, ${data.user.name}! 🎉`, 'success', 3000);
         loginForm.value = { email: '', password: '' };
         setTimeout(() => navigate(data.user.role === 'staff' ? 'dashboard' : 'rooms'), 800);
       } catch (err) { authMsg.value = 'Connection error: ' + err.message; authMsgType.value = 'error'; }
@@ -354,6 +369,7 @@ createApp({
         // Success: account created, must verify email
         authMsg.value = '✅ Account created! Check your email to verify your account before signing in.';
         authMsgType.value = 'success';
+        showToast('Check your email to verify your account! 📧', 'success', 4000);
         regForm.value = { name: '', email: '', password: '', confirm: '', role: 'guest' };
         // Switch to login tab after 3 seconds
         setTimeout(() => {
@@ -723,6 +739,7 @@ createApp({
       serviceAvails, fetchServiceAvails, deleteServiceAvail, confirmDelete,
       showDeleteModal, pendingDeleteId, deleteBooking, confirmDeleteBooking,
       showDeleteBookingModal, pendingDeleteBookingId, updateAvailStatus,
+      toasts, showToast,
       // ── reviews ──
       reviews, reviewsAvg, reviewsTotal, reviewForm, reviewHover,
       eligibleBooking, submitReview,

@@ -22,6 +22,12 @@
 </head>
 <body>
 <div id="app">
+  <!-- TOAST NOTIFICATIONS -->
+  <div class="toast-container">
+    <div v-for="(toast, idx) in toasts" :key="idx" :class="['toast', toast.type, {removing: toast.removing}]">
+      {{ toast.message }}
+    </div>
+  </div>
 
   <!-- NAVBAR -->
   <nav>
