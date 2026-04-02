@@ -1044,6 +1044,22 @@
       .filter-group select {
         font-size: 16px;
         padding: 0.6rem 0.75rem;
+        min-height: 44px;
+        background: var(--sand);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        width: 100%;
+        box-sizing: border-box;
+      }
+
+      .filter-group input[type="date"] {
+        -webkit-appearance: none;
+        appearance: none;
+        background-color: var(--sand);
+      }
+
+      .filter-group input[type="date"]::-webkit-date-and-time-value {
+        text-align: left;
       }
 
       /* Room Cards */
