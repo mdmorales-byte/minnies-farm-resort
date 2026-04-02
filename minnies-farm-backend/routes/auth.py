@@ -185,7 +185,7 @@ def forgot_password():
     if user:
         token = secrets.token_urlsafe(32)
         RESET_TOKENS[token] = {'user_id': user.id, 'expires': time.time() + 3600}
-        reset_link = f"https://mdmorales-byte.github.io/minnies-farm-resort?reset_token={token}"
+        reset_link = f"https://minnies-farm-resort.vercel.app?reset_token={token}"
 
         send_email_background(
             email,
