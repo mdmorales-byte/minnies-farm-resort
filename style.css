@@ -1062,6 +1062,24 @@
         text-align: left;
       }
 
+      /* Fix date inputs in booking card and all forms */
+      .form-group input[type="date"] {
+        -webkit-appearance: none;
+        appearance: none;
+        font-size: 16px;
+        padding: 0.6rem 0.75rem;
+        min-height: 44px;
+        background: var(--sand);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        width: 100%;
+        box-sizing: border-box;
+      }
+
+      .form-group input[type="date"]::-webkit-date-and-time-value {
+        text-align: left;
+      }
+
       /* Room Cards */
       .rooms-grid {
         grid-template-columns: 1fr;
