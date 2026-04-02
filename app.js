@@ -315,6 +315,53 @@ createApp({
       loading.value = false;
     }
 
+    async function doLogin() {
+      if (!loginForm.value.email || !loginForm.value.password) {
+        authMsg.value = 'Please fill in all fields.';
+        authMsgType.value = 'error';
+        authMsgKey.value++;
+        return;
+      }
+      
+      // Validate email format
+      const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+      if (!emailRegex.test(loginForm.value.email)) {
+        authMsg.value = 'Please enter a valid email address.';
+        authMsgType.value = 'error';
+        authMsgKey.value++;
+        return;
+      }
+      
+      loading.value = true;
+      try {
+        const res = await fetch(`${API_URL}/auth/login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: loginForm.value.email, password: loginForm.value.password })
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          authMsg.value = data.error || 'Login failed';
+          authMsgType.value = 'error';
+          authMsgKey.value++;
+          return;
+        }
+        token.value = data.token;
+        localStorage.setItem('token', data.token);
+        currentUser.value = data.user;
+        authMsg.value = '✅ Logged in successfully!';
+        authMsgType.value = 'success';
+        showToast(`Welcome back, ${data.user.name}! 🎉`, 'success', 3000);
+        loginForm.value = { email: '', password: '' };
+        setTimeout(() => navigate(data.user.role === 'staff' ? 'dashboard' : 'rooms'), 800);
+      } catch (err) {
+        authMsg.value = 'Connection error: ' + err.message;
+        authMsgType.value = 'error';
+        authMsgKey.value++;
+      }
+      loading.value = false;
+    }
+
     async function doRegister() {
       if (!regForm.value.name || !regForm.value.email || !regForm.value.password) {
         authMsg.value = 'Please fill in all fields.'; 
