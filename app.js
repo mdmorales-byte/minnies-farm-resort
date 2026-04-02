@@ -310,50 +310,8 @@ createApp({
             authMsgType.value = 'error';
             authMsgKey.value++;
           }
-        authMsgType.value = 'error';
-        authMsgKey.value++;
-        return;
-      }
-      // Get user info from Google
-      try {
-        const res = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
-          headers: { Authorization: `Bearer ${tokenResponse.access_token}` }
-        });
-        const googleUser = await res.json();
-        
-        if (!googleUser.email) {
-          authMsg.value = 'Could not get email from Google.';
-          authMsgType.value = 'error';
-          authMsgKey.value++;
-          return;
         }
-        
-        // Send to our backend
-        const backendRes = await fetch(`${API_URL}/auth/google`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email: loginForm.value.email, password: loginForm.value.password })
-        });
-        const data = await res.json();
-        if (!res.ok) { 
-          authMsg.value = data.error || 'Login failed'; 
-          authMsgType.value = 'error'; 
-          authMsgKey.value++;  // Trigger animation
-          return; 
-        }
-        token.value = data.token;
-        localStorage.setItem('token', data.token);
-        currentUser.value = data.user;
-        authMsg.value = '✅ Login successful!';
-        authMsgType.value = 'success';
-        showToast(`Welcome back, ${data.user.name}! 🎉`, 'success', 3000);
-        loginForm.value = { email: '', password: '' };
-        setTimeout(() => navigate(data.user.role === 'staff' ? 'dashboard' : 'rooms'), 800);
-      } catch (err) { 
-        authMsg.value = 'Connection error: ' + err.message; 
-        authMsgType.value = 'error'; 
-        authMsgKey.value++;  // Trigger animation
-      }
+      });
       loading.value = false;
     }
 
