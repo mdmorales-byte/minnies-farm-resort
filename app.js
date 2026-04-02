@@ -310,83 +310,26 @@ createApp({
             authMsgType.value = 'error';
             authMsgKey.value++;
           }
-        }
-      });
-      client.requestAccessToken();
-    }
-
-    function facebookLogin() {
-      // Check if Facebook SDK is loaded
-      if (typeof FB === 'undefined') {
-        authMsg.value = 'Facebook SDK is loading... Please try again in a moment.';
         authMsgType.value = 'error';
         authMsgKey.value++;
         return;
       }
-
-      FB.login(async function(response) {
-        if (!response.authResponse) {
-          authMsg.value = 'Facebook login was cancelled.';
+      // Get user info from Google
+      try {
+        const res = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+          headers: { Authorization: `Bearer ${tokenResponse.access_token}` }
+        });
+        const googleUser = await res.json();
+        
+        if (!googleUser.email) {
+          authMsg.value = 'Could not get email from Google.';
           authMsgType.value = 'error';
           authMsgKey.value++;
           return;
         }
-
-        try {
-          // Get user info from Facebook
-          FB.api('/me', { fields: 'id,name,email' }, async function(fbUser) {
-            try {
-              if (!fbUser.email) {
-                authMsg.value = 'Could not get email from Facebook. Please check your privacy settings.';
-                authMsgType.value = 'error';
-                authMsgKey.value++;
-                return;
-              }
-              
-              // Send to our backend
-              const backendRes = await fetch(`${API_URL}/auth/facebook`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  email: fbUser.email.toLowerCase(),
-                  name: fbUser.name,
-                  facebook_id: fbUser.id
-                })
-              });
-              const data = await backendRes.json();
-              
-              if (!backendRes.ok) { 
-                authMsg.value = data.error || 'Facebook login failed'; 
-                authMsgType.value = 'error';
-                authMsgKey.value++;
-                return; 
-              }
-              
-              token.value = data.token;
-              localStorage.setItem('token', data.token);
-              currentUser.value = data.user;
-              authMsg.value = '✅ Logged in with Facebook!';
-              authMsgType.value = 'success';
-              showToast(`Welcome, ${data.user.name}! 🎉`, 'success', 3000);
-              setTimeout(() => navigate(data.user.role === 'staff' ? 'dashboard' : 'rooms'), 800);
-            } catch (err) {
-              authMsg.value = 'Connection error: ' + err.message;
-              authMsgType.value = 'error';
-              authMsgKey.value++;
-            }
-          });
-        } catch (err) {
-          authMsg.value = 'Facebook login error: ' + err.message;
-          authMsgType.value = 'error';
-          authMsgKey.value++;
-        }
-      }, { scope: 'email' });
-    }
-
-    async function doLogin() {
-      loading.value = true;
-      try {
-        const res = await fetch(`${API_URL}/auth/login`, {
+        
+        // Send to our backend
+        const backendRes = await fetch(`${API_URL}/auth/google`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email: loginForm.value.email, password: loginForm.value.password })
@@ -818,7 +761,7 @@ createApp({
       today, currentUser, token, loginForm, regForm, showLoginPw, showRegPw, showRegConfirmPw, rooms, filters, selectedRoom,
       bookingForm, roomForm, lastBooking, allBookings, features, teamMembers, faqs,
       filteredRooms, bookingNights, bookingTotal, upcomingBookings, pastBookings,
-      navigate, doLogin, doRegister, logout, googleLogin, facebookLogin, doForgotPassword, doResetPassword,
+      navigate, doLogin, doRegister, logout, googleLogin, doForgotPassword, doResetPassword,
       showForgotPassword, forgotEmail, forgotMsg, forgotMsgType,
       showResetPassword, resetPassword, resetPasswordConfirm, resetMsg, resetMsgType, resetFilters, fetchRooms, fetchCurrentUser,
       fetchUserBookings, viewRoom, doBook, cancelBooking, openAddRoom, editRoom, saveRoom,

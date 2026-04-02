@@ -170,35 +170,7 @@ def google_login():
     return jsonify({'token': token, 'user': user.to_dict()}), 200
 
 
-# ── FACEBOOK LOGIN ────────────────────────────────────────────────────────────
-@auth_bp.route('/facebook', methods=['POST'])
-def facebook_login():
-    data = request.get_json()
-    email = data.get('email', '').strip().lower()
-    name = data.get('name')
-    facebook_id = data.get('facebook_id')
-
-    if not email or not facebook_id:
-        return jsonify({'error': 'Invalid Facebook credentials'}), 400
-
-    user = User.query.filter_by(email=email).first()
-
-    if not user:
-        user = User(
-            name        = name,
-            email       = email,
-            password    = bcrypt.generate_password_hash(facebook_id).decode('utf-8'),
-            role        = 'guest',
-            is_verified = True,
-        )
-        db.session.add(user)
-        db.session.commit()
-
-    token = create_access_token(identity=str(user.id))
-    return jsonify({'token': token, 'user': user.to_dict()}), 200
-
-
-# ── FORGOT PASSWORD ───────────────────────────────────────────────────────────
+# ── FORGOT PASSWORD ────────────────────────────────────────────────────────────
 @auth_bp.route('/forgot-password', methods=['POST'])
 def forgot_password():
     data = request.get_json()
