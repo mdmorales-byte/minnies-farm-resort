@@ -255,6 +255,13 @@ createApp({
     const GOOGLE_CLIENT_ID = '549203417668-bl1k05ionrenlhnukkui7b6hka24rbbe.apps.googleusercontent.com';
 
     function googleLogin() {
+      if (!window.google || !window.google.accounts) {
+        authMsg.value = 'Google services not loaded. Please refresh the page and try again.';
+        authMsgType.value = 'error';
+        authMsgKey.value++;
+        return;
+      }
+      
       const client = google.accounts.oauth2.initTokenClient({
         client_id: GOOGLE_CLIENT_ID,
         scope: 'email profile',
@@ -312,7 +319,7 @@ createApp({
           }
         }
       });
-      loading.value = false;
+      client.requestAccessToken();
     }
 
     async function doLogin() {
