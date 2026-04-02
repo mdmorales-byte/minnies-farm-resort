@@ -23,6 +23,9 @@ createApp({
     const pendingDeleteRoom = ref(null);
     const toasts = ref([]);
 
+    // Mobile menu state
+    const mobileMenuOpen = ref(false);
+
     const today = new Date().toISOString().split('T')[0];
 
     const currentUser = ref(null);
@@ -242,6 +245,7 @@ createApp({
 
     function navigate(p) {
       page.value = p;
+      mobileMenuOpen.value = false; // Close mobile menu on navigation
       authMsg.value = '';
       if (p === 'rooms') fetchRooms();
       if (p === 'dashboard') {
@@ -769,7 +773,7 @@ createApp({
 
     // ── RETURN (all refs/functions exposed to template) ────────────────────────
     return {
-      page, authTab, dashTab, authMsg, authMsgType, authMsgKey, showRoomModal, editingRoom, loading,
+      page, authTab, dashTab, authMsg, authMsgType, authMsgKey, showRoomModal, editingRoom, loading, mobileMenuOpen,
       today, currentUser, token, loginForm, regForm, showLoginPw, showRegPw, showRegConfirmPw, rooms, filters, selectedRoom,
       bookingForm, roomForm, lastBooking, allBookings, features, teamMembers, faqs,
       filteredRooms, bookingNights, bookingTotal, upcomingBookings, pastBookings,

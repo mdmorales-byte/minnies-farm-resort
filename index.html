@@ -32,7 +32,10 @@
   <!-- NAVBAR -->
   <nav>
     <div class="nav-brand" @click="navigate('home')">🎀 Minnie's Farm Resort</div>
-    <div class="nav-links">
+    <button class="mobile-menu-btn" @click="mobileMenuOpen = !mobileMenuOpen" aria-label="Toggle menu">
+      {{ mobileMenuOpen ? '✕' : '☰' }}
+    </button>
+    <div class="nav-links" :class="{ active: mobileMenuOpen }">
       <template v-if="currentUser">
         <span class="nav-role-badge">{{ currentUser.role }}</span>
         <button class="nav-btn" :class="{active: page==='rooms'}" @click="navigate('rooms')">Browse Rooms</button>
