@@ -803,6 +803,9 @@ createApp({
 
     async function toggleService(service) {
       const newStatus = !service.is_active;
+      // Optimistically update the UI immediately
+      service.is_active = newStatus;
+
       try {
         const res = await fetch(`${API_URL}/services/${service.id}`, {
           method: 'PUT',
@@ -812,14 +815,18 @@ createApp({
           },
           body: JSON.stringify({ is_active: newStatus })
         });
+        
         const data = await res.json();
-        if (res.ok) {
-          service.is_active = newStatus;
-          showToast(`${service.name} is now ${newStatus ? 'visible' : 'hidden'}.`, 'success');
-        } else {
+        if (!res.ok) {
+          // Revert if the server call failed
+          service.is_active = !newStatus;
           showToast(data.error || 'Failed to toggle service.', 'error');
+        } else {
+          showToast(`${service.name} is now ${newStatus ? 'Public' : 'Hidden'}.`, 'success');
         }
       } catch (err) {
+        // Revert on connection error
+        service.is_active = !newStatus;
         showToast('Connection error.', 'error');
       }
     }
