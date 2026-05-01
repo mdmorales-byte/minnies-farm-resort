@@ -21,6 +21,7 @@ createApp({
     const pendingDeleteBookingId = ref(null);
     const showDeleteRoomModal = ref(false);
     const pendingDeleteRoom = ref(null);
+    const staffTab = ref('bookings');
     const toasts = ref([]);
 
     // Mobile menu state
@@ -676,6 +677,39 @@ createApp({
       loading.value = false;
     }
 
+    function triggerUpload(index) {
+      document.getElementById('file-input-' + index).click();
+    }
+
+    async function handleFileUpload(event, index) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const formData = new FormData();
+      formData.append('image', file);
+
+      showToast(`Uploading image ${index}... 📤`, 'info');
+
+      try {
+        const res = await fetch(`${API_URL}/rooms/upload-image`, {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${token.value}` },
+          body: formData
+        });
+
+        const data = await res.json();
+        if (res.ok) {
+          const fieldName = 'image_url' + (index === 1 ? '' : '_' + index);
+          roomForm.value[fieldName] = data.image_url;
+          showToast(`Image ${index} uploaded! 📸`, 'success');
+        } else {
+          showToast(data.error || 'Upload failed', 'error');
+        }
+      } catch (err) {
+        showToast('Upload error: ' + err.message, 'error');
+      }
+    }
+
     // ── SERVICES ──────────────────────────────────────
     async function fetchServices() {
       try {
@@ -734,8 +768,60 @@ createApp({
           headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token.value}` },
           body: JSON.stringify({ status })
         });
-        if (res.ok) await fetchServiceAvails();
-      } catch (err) { console.error(err); }
+        const data = await res.json();
+        if (res.ok) {
+          showToast('Status updated! ', 'success');
+          fetchServiceAvails();
+        } else {
+          showToast(data.error || 'Failed to update status.', 'error');
+        }
+      } catch (err) {
+        showToast('Connection error.', 'error');
+      }
+    }
+
+    async function updateServiceStock(service) {
+      try {
+        const res = await fetch(`${API_URL}/services/${service.id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token.value}`
+          },
+          body: JSON.stringify({ stock_quantity: service.stock_quantity })
+        });
+        const data = await res.json();
+        if (res.ok) {
+          showToast(`Stock updated for ${service.name}! `, 'success');
+        } else {
+          showToast(data.error || 'Failed to update stock.', 'error');
+        }
+      } catch (err) {
+        showToast('Connection error.', 'error');
+      }
+    }
+
+    async function toggleService(service) {
+      const newStatus = !service.is_active;
+      try {
+        const res = await fetch(`${API_URL}/services/${service.id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token.value}`
+          },
+          body: JSON.stringify({ is_active: newStatus })
+        });
+        const data = await res.json();
+        if (res.ok) {
+          service.is_active = newStatus;
+          showToast(`${service.name} is now ${newStatus ? 'visible' : 'hidden'}.`, 'success');
+        } else {
+          showToast(data.error || 'Failed to toggle service.', 'error');
+        }
+      } catch (err) {
+        showToast('Connection error.', 'error');
+      }
     }
 
     async function availService(name, price) {
@@ -756,7 +842,7 @@ createApp({
       serviceModalData.value = {
         name, price,
         guest: currentUser.value.name,
-        icon: name === 'Karaoke Room' ? '🎤' : name === 'Day Fun Bundle' ? '🎤🌿' : '🌿'
+        icon: name === 'Karaoke Room' ? '' : name === 'Day Fun Bundle' ? '' : ''
       };
       showServiceModal.value = true;
     }
@@ -787,7 +873,13 @@ createApp({
       serviceAvails, fetchServiceAvails, deleteServiceAvail, confirmDelete,
       showDeleteModal, pendingDeleteId, deleteBooking, confirmDeleteBooking,
       showDeleteBookingModal, pendingDeleteBookingId, updateAvailStatus,
-      toasts, showToast,
+      updateServiceStock,
+      toggleService,
+      triggerUpload,
+      handleFileUpload,
+      staffTab,
+      navigate,
+      showToast,
       // ── reviews ──
       reviews, reviewsAvg, reviewsTotal, reviewForm, reviewHover,
       eligibleBooking, submitReview,

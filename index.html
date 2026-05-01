@@ -414,67 +414,110 @@
         <div class="stat-card"><div class="stat-value">{{ rooms.filter(r=>r.is_available).length }}</div><div class="stat-label">Available Rooms</div></div>
         <div class="stat-card"><div class="stat-value">₱{{ allBookings.reduce((s,b)=>s+b.total,0).toLocaleString() }}</div><div class="stat-label">Total Revenue</div></div>
       </div>
-      <div class="table-wrap">
-        <div class="table-header"><h3>Room Inventory</h3><button class="btn btn-teal btn-sm" @click="openAddRoom">+ Add New Room</button></div>
-        <table class="data-table">
-          <thead><tr><th>Room</th><th>Type</th><th>Capacity</th><th>Price/Night</th><th>Status</th><th>Actions</th></tr></thead>
-          <tbody>
-            <tr v-for="r in rooms" :key="r.id">
-              <td><strong>{{ r.name }}</strong></td>
-              <td>{{ r.type }}</td>
-              <td>{{ r.capacity }} guests</td>
-              <td>₱{{ r.price_per_night.toLocaleString() }}</td>
-              <td><span class="status-chip" :class="statusClass(r.room_status)">{{ statusLabel(r.room_status) }}</span></td>
-              <td style="display:flex;gap:0.5rem;padding:0.9rem 1rem">
-                <button class="btn btn-sm" style="background:var(--sand);color:var(--teal);border:1px solid var(--teal)" @click="editRoom(r)">Edit</button>
-                <button class="btn btn-danger btn-sm" @click="deleteRoom(r)">Delete</button>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+
+      <div class="dashboard-tabs">
+        <button class="dash-tab" :class="{active:staffTab==='bookings'}" @click="staffTab='bookings'">Bookings</button>
+        <button class="dash-tab" :class="{active:staffTab==='services'}" @click="staffTab='services'">Manage Services</button>
+        <button class="dash-tab" :class="{active:staffTab==='rooms'}" @click="staffTab='rooms'">Manage Rooms</button>
       </div>
-      <div class="table-wrap">
-        <div class="table-header"><h3>All Reservations</h3></div>
-        <table class="data-table">
-          <thead><tr><th>Guest</th><th>Room</th><th>Check-in</th><th>Check-out</th><th>Status</th><th>Total</th><th>Actions</th></tr></thead>
-          <tbody>
-            <tr v-for="b in allBookings" :key="b.id">
-              <td>{{ b.guestName }}</td>
-              <td>{{ b.room }}</td>
-              <td>{{ b.checkIn }}</td>
-              <td>{{ b.checkOut }}</td>
-              <td><span class="status-chip" :class="'status-'+b.status">{{ b.status }}</span></td>
-              <td>₱{{ b.total.toLocaleString() }}</td>
-              <td style="display:flex;gap:0.4rem;flex-wrap:wrap">
-                <button v-if="b.status === 'pending'" @click="updateBookingStatus(b, 'confirmed')" style="background:#2d6a5f;color:white;border:none;padding:4px 8px;border-radius:4px;cursor:pointer;font-size:12px">✓ Confirm</button>
-                <button v-if="b.status === 'confirmed'" @click="updateBookingStatus(b, 'completed')" style="background:#1a6a9a;color:white;border:none;padding:4px 8px;border-radius:4px;cursor:pointer;font-size:12px">✓ Complete</button>
-                <button v-if="b.status !== 'cancelled' && b.status !== 'completed'" @click="updateBookingStatus(b, 'cancelled')" style="background:#c0392b;color:white;border:none;padding:4px 8px;border-radius:4px;cursor:pointer;font-size:12px">✗ Cancel</button>
-                <button @click="deleteBooking(b)" style="background:#7a1a1a;color:white;border:none;padding:4px 8px;border-radius:4px;cursor:pointer;font-size:12px">🗑️</button>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+
+      <!-- STAFF: MANAGE SERVICES -->
+      <div v-if="staffTab==='services'">
+        <div class="table-wrap">
+          <div class="table-header"><h3>Service Inventory</h3></div>
+          <table class="data-table">
+            <thead><tr><th>Service</th><th>Category</th><th>Price</th><th>Stock Quantity</th><th>Visibility</th></tr></thead>
+            <tbody>
+              <tr v-for="s in services" :key="s.id">
+                <td><strong>{{ s.name }}</strong></td>
+                <td>{{ s.category }}</td>
+                <td>₱{{ Number(s.price).toLocaleString() }}</td>
+                <td>
+                  <div style="display:flex;align-items:center;gap:0.5rem">
+                    <input type="number" v-model="s.stock_quantity" @change="updateServiceStock(s)" style="width:70px;padding:4px;border:1px solid var(--border);border-radius:4px" />
+                    <small style="color:var(--muted);font-size:0.7rem">(-1=∞)</small>
+                  </div>
+                </td>
+                <td>
+                  <button class="btn btn-sm" :class="s.is_active ? 'btn-teal' : 'btn-outline'" @click="toggleService(s)">
+                    {{ s.is_active ? 'Public' : 'Hidden' }}
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        
+        <div class="table-wrap">
+          <div class="table-header"><h3>Service Requests</h3></div>
+          <table class="data-table">
+            <thead><tr><th>Guest</th><th>Service</th><th>Price</th><th>Date</th><th>Status</th><th>Actions</th></tr></thead>
+            <tbody>
+              <tr v-for="a in serviceAvails" :key="a.id">
+                <td>{{ a.guest_name }}</td>
+                <td>{{ a.service_name }}</td>
+                <td>₱{{ Number(a.total_price).toLocaleString() }}</td>
+                <td>{{ a.created_at ? a.created_at.slice(0,10) : '' }}</td>
+                <td><span class="status-chip" :class="{'status-confirmed': a.status === 'confirmed','status-pending': a.status === 'pending','status-completed': a.status === 'completed'}">{{ a.status }}</span></td>
+                <td style="display:flex;gap:0.4rem;flex-wrap:wrap">
+                  <button v-if="a.status === 'pending'" @click="updateAvailStatus(a.id, 'confirmed')" style="background:#2d6a5f;color:white;border:none;padding:4px 8px;border-radius:4px;cursor:pointer;font-size:12px">✓ Confirm</button>
+                  <button v-if="a.status === 'confirmed'" @click="updateAvailStatus(a.id, 'completed')" style="background:#1a6a9a;color:white;border:none;padding:4px 8px;border-radius:4px;cursor:pointer;font-size:12px">✓ Complete</button>
+                  <button @click="deleteServiceAvail(a.id)" class="btn btn-danger btn-sm">Delete</button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+          <div v-if="serviceAvails.length===0" style="text-align:center;padding:2rem;color:var(--muted)">No service requests yet.</div>
+        </div>
       </div>
-      <div class="table-wrap">
-        <div class="table-header"><h3>Service Requests</h3></div>
-        <table class="data-table">
-          <thead><tr><th>Guest</th><th>Service</th><th>Price</th><th>Date</th><th>Status</th><th>Actions</th></tr></thead>
-          <tbody>
-            <tr v-for="a in serviceAvails" :key="a.id">
-              <td>{{ a.guest_name }}</td>
-              <td>{{ a.service_name }}</td>
-              <td>₱{{ Number(a.total_price).toLocaleString() }}</td>
-              <td>{{ a.created_at ? a.created_at.slice(0,10) : '' }}</td>
-              <td><span class="status-chip" :class="{'status-confirmed': a.status === 'confirmed','status-pending': a.status === 'pending','status-completed': a.status === 'completed'}">{{ a.status }}</span></td>
-              <td style="display:flex;gap:0.4rem;flex-wrap:wrap">
-                <button v-if="a.status === 'pending'" @click="updateAvailStatus(a.id, 'confirmed')" style="background:#2d6a5f;color:white;border:none;padding:4px 8px;border-radius:4px;cursor:pointer;font-size:12px">✓ Confirm</button>
-                <button v-if="a.status === 'confirmed'" @click="updateAvailStatus(a.id, 'completed')" style="background:#1a6a9a;color:white;border:none;padding:4px 8px;border-radius:4px;cursor:pointer;font-size:12px">✓ Complete</button>
-                <button @click="deleteServiceAvail(a.id)" class="btn btn-danger btn-sm">Delete</button>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-        <div v-if="serviceAvails.length===0" style="text-align:center;padding:2rem;color:var(--muted)">No service requests yet.</div>
+
+      <!-- STAFF: MANAGE ROOMS -->
+      <div v-if="staffTab==='rooms'">
+        <div class="table-wrap">
+          <div class="table-header"><h3>Room Inventory</h3><button class="btn btn-teal btn-sm" @click="openAddRoom">+ Add New Room</button></div>
+          <table class="data-table">
+            <thead><tr><th>Room</th><th>Type</th><th>Capacity</th><th>Price/Night</th><th>Status</th><th>Actions</th></tr></thead>
+            <tbody>
+              <tr v-for="r in rooms" :key="r.id">
+                <td><strong>{{ r.name }}</strong></td>
+                <td>{{ r.type }}</td>
+                <td>{{ r.capacity }} guests</td>
+                <td>₱{{ r.price_per_night.toLocaleString() }}</td>
+                <td><span class="status-chip" :class="statusClass(r.room_status)">{{ statusLabel(r.room_status) }}</span></td>
+                <td style="display:flex;gap:0.5rem;padding:0.9rem 1rem">
+                  <button class="btn btn-sm" style="background:var(--sand);color:var(--teal);border:1px solid var(--teal)" @click="editRoom(r)">Edit</button>
+                  <button class="btn btn-danger btn-sm" @click="deleteRoom(r)">Delete</button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- STAFF: MANAGE BOOKINGS -->
+      <div v-if="staffTab==='bookings'">
+        <div class="table-wrap">
+          <div class="table-header"><h3>All Reservations</h3></div>
+          <table class="data-table">
+            <thead><tr><th>Guest</th><th>Room</th><th>Check-in</th><th>Check-out</th><th>Status</th><th>Total</th><th>Actions</th></tr></thead>
+            <tbody>
+              <tr v-for="b in allBookings" :key="b.id">
+                <td>{{ b.guestName }}</td>
+                <td>{{ b.room }}</td>
+                <td>{{ b.checkIn }}</td>
+                <td>{{ b.checkOut }}</td>
+                <td><span class="status-chip" :class="'status-'+b.status">{{ b.status }}</span></td>
+                <td>₱{{ b.total.toLocaleString() }}</td>
+                <td style="display:flex;gap:0.4rem;flex-wrap:wrap">
+                  <button v-if="b.status === 'pending'" @click="updateBookingStatus(b, 'confirmed')" style="background:#2d6a5f;color:white;border:none;padding:4px 8px;border-radius:4px;cursor:pointer;font-size:12px">✓ Confirm</button>
+                  <button v-if="b.status === 'confirmed'" @click="updateBookingStatus(b, 'completed')" style="background:#1a6a9a;color:white;border:none;padding:4px 8px;border-radius:4px;cursor:pointer;font-size:12px">✓ Complete</button>
+                  <button v-if="b.status !== 'cancelled' && b.status !== 'completed'" @click="updateBookingStatus(b, 'cancelled')" style="background:#c0392b;color:white;border:none;padding:4px 8px;border-radius:4px;cursor:pointer;font-size:12px">✗ Cancel</button>
+                  <button @click="deleteBooking(b)" style="background:#7a1a1a;color:white;border:none;padding:4px 8px;border-radius:4px;cursor:pointer;font-size:12px">🗑️</button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   </div>
@@ -519,11 +562,22 @@
       <div class="form-group"><label>Description</label><textarea v-model="roomForm.description" rows="3" placeholder="Describe the room..."></textarea></div>
       <div class="form-group"><label>Size (m²)</label><input type="number" v-model="roomForm.sqm" placeholder="e.g. 28" min="1" /></div>
       <div class="form-group"><label>Amenities <span style="color:var(--muted);font-weight:400">(comma separated)</span></label><input v-model="roomForm.amenities" placeholder="e.g. Free Wi-Fi, Air Conditioning, Mini Fridge" /></div>
-      <div class="form-group"><label>Image URL 1 (Main)</label><input v-model="roomForm.image_url" placeholder="https://..." /></div>
-      <div class="form-group"><label>Image URL 2</label><input v-model="roomForm.image_url_2" placeholder="https://..." /></div>
-      <div class="form-group"><label>Image URL 3</label><input v-model="roomForm.image_url_3" placeholder="https://..." /></div>
-      <div class="form-group"><label>Image URL 4</label><input v-model="roomForm.image_url_4" placeholder="https://..." /></div>
-      <div class="form-group"><label>Image URL 5</label><input v-model="roomForm.image_url_5" placeholder="https://..." /></div>
+      
+      <!-- IMAGE UPLOADER -->
+      <div class="form-group">
+        <label>Room Images</label>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem;margin-bottom:0.5rem">
+          <div v-for="i in [1,2,3,4,5]" :key="i">
+            <div style="font-size:0.75rem;margin-bottom:2px">Image {{ i }}</div>
+            <div style="display:flex;gap:4px">
+              <input type="text" v-model="roomForm['image_url' + (i===1?'':'_'+i)]" placeholder="URL..." style="font-size:0.75rem;padding:4px" />
+              <button class="btn btn-teal" style="padding:4px 8px;font-size:10px" @click="triggerUpload(i)">Upload</button>
+            </div>
+            <input type="file" :id="'file-input-' + i" style="display:none" accept="image/*" @change="handleFileUpload($event, i)" />
+          </div>
+        </div>
+      </div>
+
       <div style="display:flex;gap:1rem;justify-content:flex-end;margin-top:1.5rem">
         <button class="btn" style="background:var(--sand);color:var(--text)" @click="showRoomModal=false">Cancel</button>
         <button class="btn btn-teal" @click="saveRoom">{{ editingRoom ? 'Update Room' : 'Create Room' }}</button>
