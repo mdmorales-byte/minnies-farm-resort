@@ -566,12 +566,15 @@
       <!-- IMAGE UPLOADER -->
       <div class="form-group">
         <label>Room Images</label>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem;margin-bottom:0.5rem">
-          <div v-for="i in [1,2,3,4,5]" :key="i">
-            <div style="font-size:0.75rem;margin-bottom:2px">Image {{ i }}</div>
-            <div style="display:flex;gap:4px">
-              <input type="text" v-model="roomForm['image_url' + (i===1?'':'_'+i)]" placeholder="URL..." style="font-size:0.75rem;padding:4px" />
-              <button class="btn btn-teal" style="padding:4px 8px;font-size:10px" @click="triggerUpload(i)">Upload</button>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill, minmax(80px, 1fr));gap:0.75rem;margin-top:0.5rem">
+          <div v-for="i in [1,2,3,4,5]" :key="i" class="image-upload-box" @click="triggerUpload(i)">
+            <div v-if="roomForm['image_url' + (i===1?'':'_'+i)]" class="preview-container">
+              <img :src="roomForm['image_url' + (i===1?'':'_'+i)]" class="upload-preview" />
+              <div class="upload-overlay"><span>Change</span></div>
+            </div>
+            <div v-else class="upload-placeholder">
+              <span style="font-size:1.5rem">+</span>
+              <span style="font-size:0.6rem">Image {{ i }}</span>
             </div>
             <input type="file" :id="'file-input-' + i" style="display:none" accept="image/*" @change="handleFileUpload($event, i)" />
           </div>
