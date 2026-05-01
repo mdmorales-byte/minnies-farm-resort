@@ -30,8 +30,29 @@ def require_staff():
 # ── GET ALL SERVICES ──────────────────────────────────────────────────────────
 @services_bp.route("", methods=["GET"])
 def get_services():
-    services = Service.query.filter_by(is_active=True).all()
-    return jsonify({"services": [s.to_dict() for s in services]}), 200
+    try:
+        services = Service.query.filter_by(is_active=True).all()
+        return jsonify({"services": [s.to_dict() for s in services]}), 200
+    except Exception as e:
+        print(f"Error fetching services: {str(e)}")
+        # If stock_quantity is missing, return services without it
+        try:
+            services = Service.query.filter_by(is_active=True).all()
+            result = []
+            for s in services:
+                d = {
+                    "id": s.id,
+                    "name": s.name,
+                    "description": s.description,
+                    "price": float(s.price),
+                    "category": s.category,
+                    "stock_quantity": -1, # Default if column missing
+                    "is_active": s.is_active
+                }
+                result.append(d)
+            return jsonify({"services": result}), 200
+        except Exception as e2:
+            return jsonify({"error": str(e2)}), 500
 
 
 # ── GET SINGLE SERVICE ────────────────────────────────────────────────────────

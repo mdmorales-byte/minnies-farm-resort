@@ -4,7 +4,3 @@ from flask_bcrypt import Bcrypt
 db     = SQLAlchemy()
 jwt    = JWTManager()
 bcrypt = Bcrypt()
-
-
-from flask_mail import Mail
-mail = Mail()
