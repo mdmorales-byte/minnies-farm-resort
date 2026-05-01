@@ -294,7 +294,7 @@
       <div style="margin-top:3rem;margin-bottom:1rem"><div class="divider-title"><h2>Day Services</h2><p>Perfect for walk-in guests who just want to enjoy the resort for the day</p></div></div>
       <div class="service-cards">
         <template v-if="services && services.length">
-          <div class="service-card" v-for="s in services" :key="s.id" v-if="s.is_active && s.category === 'day_service'">
+          <div class="service-card" v-for="s in services" :key="s.id" v-if="s && s.is_active && s.category === 'day_service'">
             <div class="service-card-header" :style="{ background: s.name === 'Day Entrance' ? 'url(https://i.imgur.com/2UDN3qi.jpg) center/cover' : 'url(https://i.imgur.com/taAWIUe.jpg) center/cover' }">
               <span class="service-card-icon">{{ s.name === 'Day Entrance' ? '🌿' : '🎤' }}</span>
               <div class="service-card-name">{{ s.name }}</div>
@@ -302,7 +302,7 @@
             </div>
             <div class="service-card-body">
               <div class="service-price-block"><span class="service-price">₱{{ s.price }}</span><span class="service-price-label">per person</span></div>
-              <div v-if="s.stock_quantity !== -1" class="stock-badge" :class="s.stock_quantity > 0 ? 'in-stock' : 'out-of-stock'">
+              <div v-if="s.stock_quantity !== undefined && s.stock_quantity !== -1" class="stock-badge" :class="s.stock_quantity > 0 ? 'in-stock' : 'out-of-stock'">
                 {{ s.stock_quantity > 0 ? 'Available: ' + s.stock_quantity : 'Fully Booked / Out of Stock' }}
               </div>
               <button class="btn btn-teal" style="width:100%" :disabled="s.stock_quantity === 0" @click="availService(s.name, s.price)">
