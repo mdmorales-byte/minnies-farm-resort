@@ -439,7 +439,7 @@
                   </div>
                 </td>
                 <td>
-                  <button class="btn btn-sm" :class="s.is_active ? 'btn-teal' : 'btn-outline'" @click="toggleService(s)">
+                  <button type="button" class="btn btn-sm" :style="{ backgroundColor: s.is_active ? '#2d6a5f' : 'transparent', color: s.is_active ? 'white' : 'var(--teal)', border: '1px solid var(--teal)', minWidth: '80px' }" @click="toggleService(s)">
                     {{ s.is_active ? 'Public' : 'Hidden' }}
                   </button>
                 </td>

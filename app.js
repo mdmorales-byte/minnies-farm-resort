@@ -816,13 +816,15 @@ createApp({
           body: JSON.stringify({ is_active: newStatus })
         });
         
-        const data = await res.json();
         if (!res.ok) {
+          const data = await res.json();
           // Revert if the server call failed
           service.is_active = !newStatus;
           showToast(data.error || 'Failed to toggle service.', 'error');
         } else {
           showToast(`${service.name} is now ${newStatus ? 'Public' : 'Hidden'}.`, 'success');
+          // Important: refresh services list to ensure frontend is in sync with DB
+          await fetchServices();
         }
       } catch (err) {
         // Revert on connection error
