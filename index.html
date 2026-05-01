@@ -293,41 +293,20 @@
     <div class="container">
       <div style="margin-top:3rem;margin-bottom:1rem"><div class="divider-title"><h2>Day Services</h2><p>Perfect for walk-in guests who just want to enjoy the resort for the day</p></div></div>
       <div class="service-cards">
-        <div class="service-card">
-          <div class="service-card-header" style="background:url(https://i.imgur.com/2UDN3qi.jpg) center/cover no-repeat;">
-            <span class="service-card-icon">🌿</span>
-            <div class="service-card-name">Day Entrance</div>
-            <div class="service-card-tagline">Walk in & enjoy the resort grounds</div>
+        <div class="service-card" v-for="s in services" :key="s.id" v-if="s.is_active && s.category === 'day_service'">
+          <div class="service-card-header" :style="{ background: s.name === 'Day Entrance' ? 'url(https://i.imgur.com/2UDN3qi.jpg) center/cover' : 'url(https://i.imgur.com/taAWIUe.jpg) center/cover' }">
+            <span class="service-card-icon">{{ s.name === 'Day Entrance' ? '🌿' : '🎤' }}</span>
+            <div class="service-card-name">{{ s.name }}</div>
+            <div class="service-card-tagline">{{ s.description }}</div>
           </div>
           <div class="service-card-body">
-            <div class="service-price-block"><span class="service-price">₱100</span><span class="service-price-label">per person</span></div>
-            <ul class="service-includes">
-              <li>Access to resort grounds & gardens</li>
-              <li>Nature walk & scenic spots</li>
-              <li>Use of outdoor seating & picnic areas</li>
-              <li>Kids' play area access</li>
-            </ul>
-            <div class="service-note"><strong>Note:</strong> Children 3 years and below enter for free.</div>
-            <button class="btn btn-teal" style="width:100%" @click="availService('Day Entrance', 100)">Avail This Service</button>
-          </div>
-        </div>
-        <div class="service-card">
-          <div class="service-card-header" style="background:url(https://i.imgur.com/taAWIUe.jpg) center/cover no-repeat;">
-            <span class="service-card-icon">🎤</span>
-            <div class="service-card-name">Karaoke Room</div>
-            <div class="service-card-tagline">Sing your heart out with friends & family</div>
-          </div>
-          <div class="service-card-body">
-            <div class="service-price-block"><span class="service-price">₱500</span><span class="service-price-label">per session</span></div>
-            <ul class="service-includes">
-              <li>Private karaoke room (up to 10 pax)</li>
-              <li>Full song library (OPM, Pop, K-pop & more)</li>
-              <li>2 microphones</li>
-              <li>Sound system & screen TV</li>
-              <li>Comfortable seating for the whole group</li>
-            </ul>
-            <div class="service-note"><strong>Session:</strong> Good for 2 hours. Extension: <strong>₱200/hour</strong>.</div>
-            <button class="btn btn-teal" style="width:100%" @click="availService('Karaoke Room', 500)">Avail This Service</button>
+            <div class="service-price-block"><span class="service-price">₱{{ s.price }}</span><span class="service-price-label">per person</span></div>
+            <div v-if="s.stock_quantity !== -1" class="stock-badge" :class="s.stock_quantity > 0 ? 'in-stock' : 'out-of-stock'">
+              {{ s.stock_quantity > 0 ? 'Available: ' + s.stock_quantity : 'Fully Booked / Out of Stock' }}
+            </div>
+            <button class="btn btn-teal" style="width:100%" :disabled="s.stock_quantity === 0" @click="availService(s.name, s.price)">
+              {{ s.stock_quantity === 0 ? 'Unavailable' : 'Avail This Service' }}
+            </button>
           </div>
         </div>
       </div>

@@ -807,7 +807,23 @@
       font-size: 1.8rem; font-weight: 600;
       color: var(--white); margin-bottom: 0.25rem;
     }
-    .service-card-tagline { font-size: 0.85rem; color: rgba(255,255,255,0.75); }
+    .service-card-tagline { font-size: 0.85rem; color: rgba(255,255,255,0.85); line-height: 1.4; }
+    .stock-badge {
+      display: inline-block;
+      padding: 0.25rem 0.6rem;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      margin-bottom: 1rem;
+    }
+    .stock-badge.in-stock {
+      background-color: #dcfce7;
+      color: #166534;
+    }
+    .stock-badge.out-of-stock {
+      background-color: #fee2e2;
+      color: #991b1b;
+    }
     .service-card-body { padding: 1.75rem 2rem 2rem; }
     .service-price-block {
       display: flex; align-items: baseline; gap: 0.4rem;

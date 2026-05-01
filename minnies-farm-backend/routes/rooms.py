@@ -8,14 +8,22 @@ DELETE /api/rooms/<id>          – delete room  (staff only)
 POST   /api/rooms/<id>/availability – check availability for dates
 """
 
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, current_app
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from models import Room, Booking, User
 from datetime import date
+import os
+from werkzeug.utils import secure_filename
+import uuid
 
 rooms_bp = Blueprint("rooms", __name__)
 
 VALID_STATUSES = {"available", "fully_booked", "under_maintenance"}
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
+
+def allowed_file(filename):
+    return '.' in filename and \
+           filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 
 # ── helper: staff guard ───────────────────────────────────────────────────────
@@ -207,3 +215,33 @@ def check_availability(room_id):
         "check_in":  data["check_in"],
         "check_out": data["check_out"],
     }), 200
+
+
+# ── UPLOAD IMAGE ──────────────────────────────────────────────────────────────
+@rooms_bp.route("/upload-image", methods=["POST"])
+@jwt_required()
+def upload_room_image():
+    _, err = require_staff()
+    if err:
+        return err
+
+    if 'image' not in request.files:
+        return jsonify({"error": "No image file provided."}), 400
+    
+    file = request.files['image']
+    if file.filename == '':
+        return jsonify({"error": "No selected file."}), 400
+    
+    if file and allowed_file(file.filename):
+        # Generate unique filename
+        ext = file.filename.rsplit('.', 1)[1].lower()
+        filename = f"{uuid.uuid4().hex}.{ext}"
+        filepath = os.path.join(current_app.config['UPLOAD_FOLDER'], filename)
+        file.save(filepath)
+        
+        # Return the public URL for the uploaded image
+        # Assuming the server is serving /uploads folder at /uploads/
+        image_url = f"{request.host_url}uploads/{filename}"
+        return jsonify({"message": "Image uploaded successfully!", "image_url": image_url}), 200
+    
+    return jsonify({"error": "Invalid file type. Allowed: png, jpg, jpeg, gif, webp"}), 400

@@ -1,4 +1,5 @@
-from flask import Flask
+import os
+from flask import Flask, send_from_directory
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager
 from extensions import db, bcrypt
@@ -18,6 +19,16 @@ def create_app():
     )
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
     app.config["JWT_SECRET_KEY"] = os.getenv("JWT_SECRET_KEY", "dev-secret")
+    app.config["UPLOAD_FOLDER"] = os.path.join(os.getcwd(), "uploads")
+    app.config["MAX_CONTENT_LENGTH"] = 16 * 1024 * 1024  # 16MB limit
+    
+    # Ensure upload folder exists
+    if not os.path.exists(app.config["UPLOAD_FOLDER"]):
+        os.makedirs(app.config["UPLOAD_FOLDER"])
+
+    @app.route('/uploads/<filename>')
+    def uploaded_file(filename):
+        return send_from_directory(app.config["UPLOAD_FOLDER"], filename)
 
     db.init_app(app)
     bcrypt.init_app(app)

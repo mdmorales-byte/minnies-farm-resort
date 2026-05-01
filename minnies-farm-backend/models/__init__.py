@@ -138,16 +138,18 @@ class Service(db.Model):
     description = db.Column(db.Text)
     price       = db.Column(db.Numeric(10,2),nullable=False)
     category    = db.Column(db.String(50))   # e.g. "day_service"
+    stock_quantity = db.Column(db.Integer,      default=-1)  # -1 means unlimited
     is_active   = db.Column(db.Boolean,      default=True)
 
     def to_dict(self):
         return {
-            "id":          self.id,
-            "name":        self.name,
-            "description": self.description,
-            "price":       float(self.price),
-            "category":    self.category,
-            "is_active":   self.is_active,
+            "id":             self.id,
+            "name":           self.name,
+            "description":    self.description,
+            "price":          float(self.price),
+            "category":       self.category,
+            "stock_quantity": self.stock_quantity,
+            "is_active":      self.is_active,
         }
 
 

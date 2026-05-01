@@ -96,6 +96,20 @@ def register():
     db.session.add(user)
     db.session.commit()
 
+    # Send welcome email
+    send_email_background(
+        email,
+        "Welcome to Minnie's Farm Resort! 🌿",
+        f"""<html><body>
+<h2>Welcome, {data["name"]}!</h2>
+<p>Thank you for registering at Minnie's Farm Resort. We're excited to have you!</p>
+<p>You can now log in and browse our rooms and services.</p>
+<p><a href="https://minnies-farm-resort.vercel.app">Visit our website</a></p>
+<br>
+<p>Best regards,<br>Minnie's Farm Resort Team</p>
+</body></html>"""
+    )
+
     # Email verification temporarily disabled - user auto-verified on registration
     # TODO: Re-enable email verification once SendGrid is configured properly
 
