@@ -42,11 +42,11 @@ def send_email_background(to_email, subject, html_content):
             # Debug: Show we're attempting to send
             print(f"📧 Attempting to send email to {to_email}...")
             print(f"   Subject: {subject}")
-            print(f"   From: moralesmickdaniel7@gmail.com")
+            print(f"   From: [REDACTED]")
             
             sg = SendGridAPIClient(sg_key)
             message = Mail(
-                from_email='moralesmickdaniel7@gmail.com',
+                from_email=os.getenv('FROM_EMAIL', 'staff@resort.com'),
                 to_emails=to_email,
                 subject=subject,
                 html_content=html_content

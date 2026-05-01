@@ -45,7 +45,7 @@ pip install -r requirements.txt
 ```bash
 cp .env.example .env
 ```
-Then open `.env` and fill in your MySQL credentials:
+Then open `.env` and fill in your MySQL credentials and other keys:
 ```
 DB_HOST=localhost
 DB_PORT=3306
@@ -53,6 +53,7 @@ DB_USER=root
 DB_PASSWORD=your_mysql_password
 DB_NAME=minnies_farm_db
 JWT_SECRET_KEY=some-random-secret-string
+SENDGRID_API_KEY=your_sendgrid_api_key_here
 ```
 
 ### 4. Create the MySQL database
@@ -79,10 +80,7 @@ Test it: open your browser and go to `http://localhost:5000/api/health`
 
 ## 🔑 Demo Accounts
 
-| Role  | Email               | Password  |
-|-------|---------------------|-----------|
-| Staff | staff@resort.com    | staff123  |
-| Guest | guest@resort.com    | guest123  |
+Please refer to `seed.py` for default demo accounts and passwords.
 
 ---
 

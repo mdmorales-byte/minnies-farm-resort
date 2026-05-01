@@ -39,8 +39,6 @@ def create_app():
     # Check if email is properly configured on startup
     if not os.getenv('SENDGRID_API_KEY'):
         print("⚠️  WARNING: SENDGRID_API_KEY environment variable is NOT SET! Email sending will not work.")
-    else:
-        print("✅ SENDGRID_API_KEY is configured. Email sending should work.")
 
     from routes.auth import auth_bp
     from routes.rooms import rooms_bp
@@ -54,42 +52,36 @@ def create_app():
     app.register_blueprint(services_bp, url_prefix="/api/services")
     app.register_blueprint(reviews_bp, url_prefix="/api/reviews")
 
-    @app.route("/api/health")
-    def health():
-        return {"status": "ok", "resort": "Minnies Farm Resort"}, 200
-
-    @app.route("/api/test-email")
+    # ── SENDGRID TEST ─────────────────────────────────────────────────────────
+    # For debugging/verification only
+    @app.route('/api/test-email', methods=['GET'])
     def test_email():
-        from sendgrid import SendGridAPIClient
-        from sendgrid.helpers.mail import Mail
-        import threading
         
         def _send_test():
             try:
                 sg_key = os.getenv('SENDGRID_API_KEY')
+                from_email = os.getenv('FROM_EMAIL')
                 if not sg_key:
                     print("❌ SENDGRID_API_KEY not configured!")
                     return
                 
                 if not sg_key.startswith('SG.'):
-                    print(f"❌ SENDGRID_API_KEY format invalid! Key starts with: {sg_key[:5]}...")
+                    print(f"❌ SENDGRID_API_KEY format invalid!")
                     return
                     
                 print("📧 Attempting to send test email...")
-                print(f"   To: mdmorales@byte.github.io")
-                print(f"   From: moralesmickdaniel7@gmail.com")
                 sg = SendGridAPIClient(sg_key)
-                test_email_addr = "mdmorales@byte.github.io"
+                test_email_addr = os.getenv('TEST_EMAIL', 'staff@resort.com')
                 msg = Mail(
-                    from_email='moralesmickdaniel7@gmail.com',
+                    from_email=from_email or 'staff@resort.com',
                     to_emails=test_email_addr,
-                    subject="Test Email - Minnie's Farm Resort",
-                    html_content="<html><body><h2>Email Test</h2><p>If you received this, email configuration is correct.</p></body></html>"
+                    subject='Test Email - Minnie\'s Farm Resort',
+                    html_content='<strong>Email configuration is working!</strong>'
                 )
-                response = sg.send(msg)
-                print(f"✅ Test email sent! HTTP {response.status_code}")
+                sg.send(msg)
+                print(f"✅ Test email sent to {test_email_addr}")
             except Exception as e:
-                print(f"❌ Test email failed")
+                print(f"❌ Test email failed: {str(e)}")
                 print(f"   Error Type: {type(e).__name__}")
                 print(f"   Error: {str(e)}")
                 if hasattr(e, 'body'):

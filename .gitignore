@@ -5,3 +5,4 @@ venv/
 
 # Environment variables (keep this secret!)
 .env
+minnies-farm-backend/.env
