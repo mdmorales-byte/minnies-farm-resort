@@ -21,6 +21,11 @@ createApp({
     const pendingDeleteBookingId = ref(null);
     const showDeleteRoomModal = ref(false);
     const pendingDeleteRoom = ref(null);
+    const showServiceAdminModal = ref(false);
+    const editingService = ref(null);
+    const showDeleteServiceModal = ref(false);
+    const pendingDeleteService = ref(null);
+    const serviceForm = ref({ name: '', category: 'day_service', price: 0, stock_quantity: -1, description: '', is_active: true });
     const staffTab = ref('bookings');
     const toasts = ref([]);
 
@@ -833,6 +838,66 @@ createApp({
       }
     }
 
+    function openAddService() {
+      editingService.value = null;
+      serviceForm.value = { name: '', category: 'day_service', price: 0, stock_quantity: -1, description: '', is_active: true };
+      showServiceAdminModal.value = true;
+    }
+
+    function editService(s) {
+      editingService.value = s;
+      serviceForm.value = { ...s };
+      showServiceAdminModal.value = true;
+    }
+
+    async function saveService() {
+      if (!serviceForm.value.name || serviceForm.value.price === '') return;
+      loading.value = true;
+      try {
+        const method = editingService.value ? 'PUT' : 'POST';
+        const url = editingService.value ? `${API_URL}/services/${editingService.value.id}` : `${API_URL}/services`;
+        const res = await fetch(url, {
+          method,
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token.value}` },
+          body: JSON.stringify(serviceForm.value)
+        });
+        if (res.ok) { 
+          await fetchServices(); 
+          showServiceAdminModal.value = false;
+          showToast(editingService.value ? 'Service updated! ✅' : 'Service created! ✅', 'success');
+        } else { 
+          const data = await res.json(); 
+          showToast(data.error || 'Error saving service', 'error'); 
+        }
+      } catch (err) { showToast('Connection error.', 'error'); }
+      loading.value = false;
+    }
+
+    function deleteService(s) {
+      pendingDeleteService.value = s;
+      showDeleteServiceModal.value = true;
+    }
+
+    async function confirmDeleteService() {
+      loading.value = true;
+      try {
+        const res = await fetch(`${API_URL}/services/${pendingDeleteService.value.id}`, {
+          method: 'DELETE',
+          headers: { 'Authorization': `Bearer ${token.value}` }
+        });
+        if (res.ok) {
+          await fetchServices();
+          showToast('Service deleted! 🗑️', 'success');
+        } else { 
+          const data = await res.json(); 
+          showToast(data.error || 'Error deleting service', 'error'); 
+        }
+      } catch (err) { showToast('Connection error.', 'error'); }
+      showDeleteServiceModal.value = false;
+      pendingDeleteService.value = null;
+      loading.value = false;
+    }
+
     async function availService(name, price) {
       if (!currentUser.value) { navigate('auth'); return; }
 
@@ -884,6 +949,16 @@ createApp({
       showDeleteBookingModal, pendingDeleteBookingId, updateAvailStatus,
       updateServiceStock,
       toggleService,
+      openAddService,
+      editService,
+      saveService,
+      deleteService,
+      confirmDeleteService,
+      showServiceAdminModal,
+      editingService,
+      showDeleteServiceModal,
+      pendingDeleteService,
+      serviceForm,
       triggerUpload,
       handleFileUpload,
       staffTab,

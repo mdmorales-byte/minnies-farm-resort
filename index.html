@@ -433,7 +433,10 @@
       <!-- STAFF: MANAGE SERVICES -->
       <div v-if="staffTab==='services'">
         <div class="table-wrap">
-          <div class="table-header"><h3>Service Inventory</h3></div>
+          <div class="table-header">
+            <h3>Service Inventory</h3>
+            <button class="btn btn-teal btn-sm" @click="openAddService">+ Add New Service</button>
+          </div>
           <table class="data-table">
             <thead><tr><th>Service</th><th>Category</th><th>Price</th><th>Stock Quantity</th><th>Visibility</th></tr></thead>
             <tbody>
@@ -448,9 +451,13 @@
                   </div>
                 </td>
                 <td>
-                  <button type="button" class="btn btn-sm" :style="{ backgroundColor: s.is_active ? '#2d6a5f' : 'transparent', color: s.is_active ? 'white' : 'var(--teal)', border: '1px solid var(--teal)', minWidth: '80px' }" @click="toggleService(s)">
-                    {{ s.is_active ? 'Public' : 'Hidden' }}
-                  </button>
+                  <div style="display:flex;gap:0.4rem">
+                    <button class="btn btn-sm" style="background:var(--sand);color:var(--teal);border:1px solid var(--teal)" @click="editService(s)">Edit</button>
+                    <button class="btn btn-sm" :style="{ backgroundColor: s.is_active ? '#2d6a5f' : 'transparent', color: s.is_active ? 'white' : 'var(--teal)', border: '1px solid var(--teal)', minWidth: '80px' }" @click="toggleService(s)">
+                      {{ s.is_active ? 'Public' : 'Hidden' }}
+                    </button>
+                    <button class="btn btn-danger btn-sm" @click="deleteService(s)">Delete</button>
+                  </div>
                 </td>
               </tr>
             </tbody>
@@ -531,7 +538,36 @@
     </div>
   </div>
 
-  <!-- CONFIRMATION -->
+  <!-- SERVICE MODAL (Add/Edit) -->
+  <div v-if="showServiceAdminModal" class="modal-overlay" @click.self="showServiceAdminModal=false">
+    <div class="modal">
+      <h3>{{ editingService ? 'Edit Service' : 'Add New Service' }}</h3>
+      <div class="form-group"><label>Service Name</label><input v-model="serviceForm.name" placeholder="e.g. Day Entrance" /></div>
+      <div class="form-group"><label>Category</label><input v-model="serviceForm.category" placeholder="e.g. day_service" /></div>
+      <div class="form-group"><label>Price</label><input type="number" v-model="serviceForm.price" min="0" /></div>
+      <div class="form-group"><label>Stock Quantity (-1 for unlimited)</label><input type="number" v-model="serviceForm.stock_quantity" /></div>
+      <div class="form-group"><label>Description</label><textarea v-model="serviceForm.description" rows="3" placeholder="Describe the service..."></textarea></div>
+      <div class="form-group">
+        <label><input type="checkbox" v-model="serviceForm.is_active" /> Is Active / Visible</label>
+      </div>
+      <div style="display:flex;gap:1rem;justify-content:flex-end;margin-top:1.5rem">
+        <button class="btn" style="background:var(--sand);color:var(--text)" @click="showServiceAdminModal=false">Cancel</button>
+        <button class="btn btn-teal" @click="saveService">{{ editingService ? 'Update Service' : 'Create Service' }}</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- DELETE SERVICE MODAL -->
+  <div v-if="showDeleteServiceModal" class="modal-overlay" @click.self="showDeleteServiceModal=false">
+    <div class="modal">
+      <h3>Confirm Deletion</h3>
+      <p>Are you sure you want to delete service "{{ pendingDeleteService.name }}"? This action cannot be undone.</p>
+      <div style="display:flex;gap:1rem;justify-content:flex-end;margin-top:1.5rem">
+        <button class="btn" style="background:var(--sand);color:var(--text)" @click="showDeleteServiceModal=false">Cancel</button>
+        <button class="btn btn-danger" @click="confirmDeleteService">Delete Service</button>
+      </div>
+    </div>
+  </div>
   <div v-if="page==='confirm'" class="page">
     <div class="container">
       <div class="confirm-card">
