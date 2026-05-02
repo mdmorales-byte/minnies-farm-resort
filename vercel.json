@@ -12,7 +12,8 @@
       "dest": "api/index.py"
     },
     {
-      "handle": "filesystem"
+      "src": "/(app.js|style.css|favicon.ico|uploads/.*)",
+      "dest": "/$1"
     },
     {
       "src": "/(.*)",
