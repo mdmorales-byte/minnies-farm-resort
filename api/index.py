@@ -38,12 +38,9 @@ def create_app():
     def uploaded_file(filename):
         return send_from_directory(app.config["UPLOAD_FOLDER"], filename)
 
-    # Initialize extensions inside to avoid early crashes
-    try:
-        from extensions import bcrypt
-        bcrypt.init_app(app)
-    except Exception as e:
-        print(f"Bcrypt init error: {e}")
+    # Initialize extensions
+    from extensions import bcrypt
+    bcrypt.init_app(app)
 
     JWTManager(app)
     CORS(app, supports_credentials=True)
