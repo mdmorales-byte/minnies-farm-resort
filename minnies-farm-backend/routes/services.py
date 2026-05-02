@@ -16,12 +16,29 @@ from flask_jwt_extended import jwt_required, get_jwt_identity, verify_jwt_in_req
 from models import Service, ServiceAvail, User
 from datetime import date
 
+# Import Supabase client for fallback
+try:
+    import supabase_client
+    USE_SUPABASE = True
+except:
+    USE_SUPABASE = False
+
 services_bp = Blueprint("services", __name__)
 
 
 def require_staff():
     user_id = get_jwt_identity()
-    user    = User.query.get(user_id)
+    user = None
+    try:
+        user = User.query.get(user_id)
+    except Exception:
+        if USE_SUPABASE:
+            user_data = supabase_client.get_user_by_id(user_id)
+            if user_data:
+                from collections import namedtuple
+                UserMock = namedtuple('UserMock', ['id', 'role'])
+                user = UserMock(id=user_data.get('id'), role=user_data.get('role'))
+    
     if not user or user.role != "staff":
         return None, (jsonify({"error": "Staff access required."}), 403)
     return user, None
@@ -32,46 +49,45 @@ def require_staff():
 def get_services():
     try:
         # Check if staff access is requested via header or parameter (optional)
-        # For now, let's just return all services if the user is a staff member
         is_staff = False
         try:
             verify_jwt_in_request(optional=True)
             user_id = get_jwt_identity()
             if user_id:
-                user = User.query.get(user_id)
+                # Try getting user from DB or Supabase
+                user = None
+                try:
+                    user = User.query.get(user_id)
+                except:
+                    if USE_SUPABASE:
+                        user_data = supabase_client.get_user_by_id(user_id)
+                        if user_data and user_data.get('role') == 'staff':
+                            is_staff = True
+                
                 if user and user.role == "staff":
                     is_staff = True
         except Exception:
             pass
 
-        if is_staff:
-            # Staff sees EVERYTHING (active and hidden)
-            services = Service.query.all()
-        else:
-            # Guests ONLY see active services
-            services = Service.query.filter_by(is_active=True).all()
+        # Try SQLAlchemy first
+        try:
+            if is_staff:
+                services = Service.query.all()
+            else:
+                services = Service.query.filter_by(is_active=True).all()
+            return jsonify({"services": [s.to_dict() for s in services]}), 200
+        except Exception:
+            # Fallback to Supabase
+            if USE_SUPABASE:
+                all_services = supabase_client.get_services()
+                if not is_staff:
+                    all_services = [s for s in all_services if s.get('is_active')]
+                return jsonify({"services": all_services}), 200
+            raise
             
-        return jsonify({"services": [s.to_dict() for s in services]}), 200
     except Exception as e:
         print(f"Error fetching services: {str(e)}")
-        # If stock_quantity is missing, return services without it
-        try:
-            services = Service.query.filter_by(is_active=True).all()
-            result = []
-            for s in services:
-                d = {
-                    "id": s.id,
-                    "name": s.name,
-                    "description": s.description,
-                    "price": float(s.price),
-                    "category": s.category,
-                    "stock_quantity": -1, # Default if column missing
-                    "is_active": s.is_active
-                }
-                result.append(d)
-            return jsonify({"services": result}), 200
-        except Exception as e2:
-            return jsonify({"error": str(e2)}), 500
+        return jsonify({"error": str(e)}), 500
 
 
 # ── GET SINGLE SERVICE ────────────────────────────────────────────────────────

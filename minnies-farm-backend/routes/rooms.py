@@ -16,6 +16,13 @@ import os
 from werkzeug.utils import secure_filename
 import uuid
 
+# Import Supabase client for fallback
+try:
+    import supabase_client
+    USE_SUPABASE = True
+except:
+    USE_SUPABASE = False
+
 rooms_bp = Blueprint("rooms", __name__)
 
 VALID_STATUSES = {"available", "fully_booked", "under_maintenance"}
@@ -38,42 +45,48 @@ def require_staff():
 # ── GET ALL ROOMS (with optional filters) ─────────────────────────────────────
 @rooms_bp.route("", methods=["GET"])
 def get_rooms():
-    from app import db
-    query = Room.query
+    # Try SQLAlchemy first
+    try:
+        from app import db
+        query = Room.query
 
-    # Filter by type
-    room_type = request.args.get("type")
-    if room_type:
-        query = query.filter(Room.type == room_type)
+        # Filter by type
+        room_type = request.args.get("type")
+        if room_type:
+            query = query.filter(Room.type == room_type)
 
-    # Filter by max price
-    max_price = request.args.get("max_price")
-    if max_price:
-        query = query.filter(Room.price_per_night <= float(max_price))
+        # Filter by max price
+        max_price = request.args.get("max_price")
+        if max_price:
+            query = query.filter(Room.price_per_night <= float(max_price))
 
-    # Filter by min capacity
-    capacity = request.args.get("capacity")
-    if capacity:
-        query = query.filter(Room.capacity >= int(capacity))
+        # Filter by min capacity
+        capacity = request.args.get("capacity")
+        if capacity:
+            query = query.filter(Room.capacity >= int(capacity))
 
-    # Filter by availability for date range
-    check_in  = request.args.get("check_in")
-    check_out = request.args.get("check_out")
-    if check_in and check_out:
-        try:
-            ci = date.fromisoformat(check_in)
-            co = date.fromisoformat(check_out)
-            booked_room_ids = db.session.query(Booking.room_id).filter(
-                Booking.status.in_(["confirmed", "pending"]),
-                Booking.check_in_date  < co,
-                Booking.check_out_date > ci,
-            ).subquery()
-            query = query.filter(Room.id.notin_(booked_room_ids))
-        except ValueError:
-            return jsonify({"error": "Invalid date format. Use YYYY-MM-DD."}), 400
-
-    rooms = query.all()
-    return jsonify({"rooms": [r.to_dict() for r in rooms]}), 200
+        rooms = query.all()
+        return jsonify({"rooms": [r.to_dict() for r in rooms]}), 200
+    except Exception:
+        # Fallback to Supabase
+        if USE_SUPABASE:
+            rooms = supabase_client.get_rooms()
+            
+            # Apply filters manually for Supabase fallback
+            room_type = request.args.get("type")
+            if room_type:
+                rooms = [r for r in rooms if r.get('type') == room_type]
+                
+            max_price = request.args.get("max_price")
+            if max_price:
+                rooms = [r for r in rooms if float(r.get('price_per_night', 0)) <= float(max_price)]
+                
+            capacity = request.args.get("capacity")
+            if capacity:
+                rooms = [r for r in rooms if int(r.get('capacity', 0)) >= int(capacity)]
+                
+            return jsonify({"rooms": rooms}), 200
+        raise
 
 
 # ── GET SINGLE ROOM ───────────────────────────────────────────────────────────
