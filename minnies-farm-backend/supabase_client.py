@@ -5,36 +5,43 @@ Uses HTTP requests instead of direct PostgreSQL connection
 import os
 import urllib.request
 import json
-from functools import wraps
+import logging
+
+# Set up logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 SUPABASE_URL = os.getenv('SUPABASE_URL')
 SUPABASE_KEY = os.getenv('SUPABASE_KEY')
 
-# Global cache for headers
-_headers_cache = None
+if not SUPABASE_URL or not SUPABASE_KEY:
+    logger.error("SUPABASE_URL or SUPABASE_KEY environment variables are missing!")
 
 def get_headers():
     """Get Supabase API headers"""
-    global _headers_cache
-    if _headers_cache is None:
-        _headers_cache = {
-            'apikey': SUPABASE_KEY,
-            'Authorization': f'Bearer {SUPABASE_KEY}',
-            'Content-Type': 'application/json',
-            'Prefer': 'return=representation'
-        }
-    return _headers_cache
+    return {
+        'apikey': SUPABASE_KEY,
+        'Authorization': f'Bearer {SUPABASE_KEY}',
+        'Content-Type': 'application/json',
+        'Prefer': 'return=representation'
+    }
 
 def supabase_request(endpoint, method='GET', data=None, params=None):
     """Make a request to Supabase REST API"""
-    url = f"{SUPABASE_URL}/rest/v1/{endpoint}"
+    if not SUPABASE_URL:
+        logger.error("Cannot make request: SUPABASE_URL is not set")
+        return None
+        
+    url = f"{SUPABASE_URL.rstrip('/')}/rest/v1/{endpoint}"
     
     if params:
         query = '&'.join([f"{k}={v}" for k, v in params.items()])
-        url = f"{url}?{query}"
+        url = f"{url}&{query}" if '?' in url else f"{url}?{query}"
     
     headers = get_headers()
     req_data = json.dumps(data).encode('utf-8') if data else None
+    
+    logger.info(f"Supabase Request: {method} {url}")
     
     req = urllib.request.Request(
         url,
@@ -47,12 +54,18 @@ def supabase_request(endpoint, method='GET', data=None, params=None):
         with urllib.request.urlopen(req, timeout=15) as response:
             if response.status == 204:
                 return None
-            return json.loads(response.read())
+            res_body = response.read().decode('utf-8')
+            return json.loads(res_body) if res_body else None
     except urllib.error.HTTPError as e:
+        error_msg = e.read().decode('utf-8')
+        logger.error(f"Supabase HTTP Error {e.code}: {error_msg}")
         if e.code == 404:
             return None
-        if e.code == 409:  # Conflict (e.g., duplicate)
+        if e.code == 409:
             return None
+        raise Exception(f"Supabase API Error: {error_msg}")
+    except Exception as e:
+        logger.error(f"Supabase Request failed: {str(e)}")
         raise
 
 # User operations
@@ -106,30 +119,3 @@ def update_service(service_id, service_data):
 
 def delete_service(service_id):
     return supabase_request(f'services?id=eq.{service_id}', method='DELETE')
-
-# Booking operations
-def get_bookings():
-    return supabase_request('bookings?select=*')
-
-def get_bookings_by_user(user_id):
-    return supabase_request(f'bookings?user_id=eq.{user_id}&select=*')
-
-def create_booking(booking_data):
-    return supabase_request('bookings', method='POST', data=booking_data)
-
-def update_booking(booking_id, booking_data):
-    return supabase_request(f'bookings?id=eq.{booking_id}', method='PATCH', data=booking_data)
-
-# Service avail operations
-def get_service_avails():
-    return supabase_request('service_avails?select=*')
-
-def create_service_avail(avail_data):
-    return supabase_request('service_avails', method='POST', data=avail_data)
-
-# Review operations
-def get_reviews():
-    return supabase_request('reviews?select=*')
-
-def create_review(review_data):
-    return supabase_request('reviews', method='POST', data=review_data)
