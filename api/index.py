@@ -17,28 +17,43 @@ def health_check():
         "env": "production" if os.getenv('VERCEL') else "development"
     })
 
-# 3. Setup core extensions
-app.config["JWT_SECRET_KEY"] = os.getenv("JWT_SECRET_KEY", "dev-secret")
-jwt = JWTManager(app)
+    # 3. Setup core extensions
+    app.config["JWT_SECRET_KEY"] = os.getenv("JWT_SECRET_KEY", "dev-secret")
+    app.config["UPLOAD_FOLDER"] = "/tmp/uploads" # Vercel only allows writing to /tmp
+    
+    if not os.path.exists(app.config["UPLOAD_FOLDER"]):
+        os.makedirs(app.config["UPLOAD_FOLDER"])
 
-# 4. Lazy load routes to prevent startup crash
-def init_routes():
+    # Import extensions from the current package
     try:
-        from .routes.auth import auth_bp
-        from .routes.rooms import rooms_bp
-        from .routes.bookings import bookings_bp
-        from .routes.services import services_bp
-        from .routes.reviews import reviews_bp
-
-        app.register_blueprint(auth_bp, url_prefix="/api/auth")
-        app.register_blueprint(rooms_bp, url_prefix="/api/rooms")
-        app.register_blueprint(bookings_bp, url_prefix="/api/bookings")
-        app.register_blueprint(services_bp, url_prefix="/api/services")
-        app.register_blueprint(reviews_bp, url_prefix="/api/reviews")
+        from .extensions import bcrypt
+        bcrypt.init_app(app)
     except Exception as e:
-        app.logger.error(f"Failed to load routes: {e}")
+        print(f"Extension load error: {e}")
 
-init_routes()
+    JWTManager(app)
+    CORS(app, supports_credentials=True)
+
+    # 4. Lazy load routes to prevent startup crash
+    def init_routes():
+        try:
+            # Absolute imports within the package
+            from .routes.auth import auth_bp
+            from .routes.rooms import rooms_bp
+            from .routes.bookings import bookings_bp
+            from .routes.services import services_bp
+            from .routes.reviews import reviews_bp
+
+            app.register_blueprint(auth_bp, url_prefix="/api/auth")
+            app.register_blueprint(rooms_bp, url_prefix="/api/rooms")
+            app.register_blueprint(bookings_bp, url_prefix="/api/bookings")
+            app.register_blueprint(services_bp, url_prefix="/api/services")
+            app.register_blueprint(reviews_bp, url_prefix="/api/reviews")
+            print("Routes registered successfully")
+        except Exception as e:
+            print(f"Failed to load routes: {e}")
+
+    init_routes()
 
 # Vercel entry point
 handler = app

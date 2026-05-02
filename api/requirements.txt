@@ -3,3 +3,4 @@ flask-cors==4.0.1
 flask-jwt-extended==4.6.0
 python-dotenv==1.0.1
 sendgrid==6.11.0
+passlib==1.7.4
