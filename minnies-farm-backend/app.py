@@ -1,12 +1,9 @@
 import os
-import threading
 from flask import Flask, send_from_directory
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager
 from extensions import bcrypt
 from dotenv import load_dotenv
-from sendgrid import SendGridAPIClient
-from sendgrid.helpers.mail import Mail
 
 # Force reload of .env file
 load_dotenv(override=True)

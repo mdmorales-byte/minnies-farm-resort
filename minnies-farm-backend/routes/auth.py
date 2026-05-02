@@ -77,7 +77,7 @@ def register():
         "is_verified": True
     }
     
-    result = supabase_client.create_user(user_data)
+    supabase_client.create_user(user_data)
     
     send_email_background(
         email,

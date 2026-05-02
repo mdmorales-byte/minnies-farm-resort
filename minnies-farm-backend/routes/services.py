@@ -65,7 +65,6 @@ def get_service(service_id):
 @services_bp.route("", methods=["POST"])
 @jwt_required()
 def create_service():
-    from app import db
     _, err = require_staff()
     if err:
         return err
@@ -74,53 +73,42 @@ def create_service():
     if not data.get("name") or data.get("price") is None:
         return jsonify({"error": "'name' and 'price' are required."}), 400
 
-    service = Service(
-        name           = data["name"],
-        description    = data.get("description", ""),
-        price          = float(data["price"]),
-        category       = data.get("category", "day_service"),
-        stock_quantity = int(data.get("stock_quantity", -1)),
-        is_active      = data.get("is_active", True),
-    )
-    db.session.add(service)
-    db.session.commit()
-    return jsonify({"message": "Service created!", "service": service.to_dict()}), 201
+    service_data = {
+        "name": data["name"],
+        "description": data.get("description", ""),
+        "price": float(data["price"]),
+        "category": data.get("category", "day_service"),
+        "stock_quantity": int(data.get("stock_quantity", -1)),
+        "is_active": data.get("is_active", True),
+    }
+    
+    result = supabase_client.create_service(service_data)
+    return jsonify({"message": "Service created!", "service": result}), 201
 
 
 # ── UPDATE SERVICE (staff only) ───────────────────────────────────────────────
 @services_bp.route("/<int:service_id>", methods=["PUT"])
 @jwt_required()
 def update_service(service_id):
-    from app import db
     _, err = require_staff()
     if err:
         return err
 
-    service = Service.query.get_or_404(service_id)
-    data    = request.get_json()
-
-    service.name        = data.get("name",        service.name)
-    service.description = data.get("description", service.description)
-    service.price          = data.get("price",          service.price)
-    service.category       = data.get("category",       service.category)
-    service.stock_quantity = data.get("stock_quantity", service.stock_quantity)
-    service.is_active      = data.get("is_active",      service.is_active)
-    db.session.commit()
-    return jsonify({"message": "Service updated!", "service": service.to_dict()}), 200
+    data = request.get_json()
+    result = supabase_client.update_service(service_id, data)
+    return jsonify({"message": "Service updated!", "service": result}), 200
 
 
 # ── DEACTIVATE SERVICE (staff only) ───────────────────────────────────────────
 @services_bp.route("/<int:service_id>", methods=["DELETE"])
 @jwt_required()
 def delete_service(service_id):
-    from app import db
     _, err = require_staff()
     if err:
         return err
 
-    service           = Service.query.get_or_404(service_id)
-    service.is_active = False
-    db.session.commit()
+    data = {"is_active": False}
+    supabase_client.update_service(service_id, data)
     return jsonify({"message": "Service deactivated."}), 200
 
 
