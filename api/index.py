@@ -1,57 +1,34 @@
 import os
 import sys
-from flask import Flask, send_from_directory, jsonify
+from flask import Flask, jsonify
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager
-from dotenv import load_dotenv
 
-# Add current directory to path for imports
-sys.path.append(os.path.dirname(__file__))
+# 1. Create the app instance
+app = Flask(__name__)
+CORS(app)
 
-# Only load .env locally (not on Vercel)
-if not os.getenv('VERCEL'):
-    load_dotenv()
+# 2. Add health check at the very top (no dependencies)
+@app.route('/api/health')
+def health_check():
+    return jsonify({
+        "status": "online",
+        "python_version": sys.version,
+        "env": "production" if os.getenv('VERCEL') else "development"
+    })
 
-def create_app():
-    app = Flask(__name__)
+# 3. Setup core extensions
+app.config["JWT_SECRET_KEY"] = os.getenv("JWT_SECRET_KEY", "dev-secret")
+jwt = JWTManager(app)
 
-    # Health check route for Vercel debugging - NO DEPENDENCIES
-    @app.route('/api/health')
-    def health():
-        return jsonify({
-            "status": "ok",
-            "supabase_url": bool(os.getenv('SUPABASE_URL')),
-            "supabase_key": bool(os.getenv('SUPABASE_KEY')),
-            "python_version": sys.version
-        })
-
-    # Config
-    app.config["JWT_SECRET_KEY"] = os.getenv("JWT_SECRET_KEY", "dev-secret")
-    app.config["UPLOAD_FOLDER"] = os.path.join(os.getcwd(), "uploads")
-    app.config["MAX_CONTENT_LENGTH"] = 16 * 1024 * 1024  # 16MB limit
-    
-    # Ensure upload folder exists
-    if not os.path.exists(app.config["UPLOAD_FOLDER"]):
-        os.makedirs(app.config["UPLOAD_FOLDER"])
-
-    @app.route('/uploads/<filename>')
-    def uploaded_file(filename):
-        return send_from_directory(app.config["UPLOAD_FOLDER"], filename)
-
-    # Initialize extensions
-    from extensions import bcrypt
-    bcrypt.init_app(app)
-
-    JWTManager(app)
-    CORS(app, supports_credentials=True)
-
-    # Import and register blueprints
+# 4. Lazy load routes to prevent startup crash
+def init_routes():
     try:
-        from routes.auth import auth_bp
-        from routes.rooms import rooms_bp
-        from routes.bookings import bookings_bp
-        from routes.services import services_bp
-        from routes.reviews import reviews_bp
+        from .routes.auth import auth_bp
+        from .routes.rooms import rooms_bp
+        from .routes.bookings import bookings_bp
+        from .routes.services import services_bp
+        from .routes.reviews import reviews_bp
 
         app.register_blueprint(auth_bp, url_prefix="/api/auth")
         app.register_blueprint(rooms_bp, url_prefix="/api/rooms")
@@ -59,12 +36,12 @@ def create_app():
         app.register_blueprint(services_bp, url_prefix="/api/services")
         app.register_blueprint(reviews_bp, url_prefix="/api/reviews")
     except Exception as e:
-        print(f"Blueprint registration error: {e}")
+        app.logger.error(f"Failed to load routes: {e}")
 
-    return app
+init_routes()
 
-# Expose 'app' at the top level for Vercel
-app = create_app()
+# Vercel entry point
+handler = app
 
 if __name__ == "__main__":
     app.run(debug=True, port=5000)
