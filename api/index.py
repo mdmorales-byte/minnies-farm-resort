@@ -1,75 +1,79 @@
 import os
 import sys
-from flask import Flask, jsonify
+import json
+import urllib.request
+from flask import Flask, jsonify, request
 from flask_cors import CORS
-from flask_jwt_extended import JWTManager
+from flask_jwt_extended import JWTManager, create_access_token
+from passlib.hash import pbkdf2_sha256
 
-# 1. Create the app instance
+# --- CONFIG ---
 app = Flask(__name__)
 CORS(app)
+app.config["JWT_SECRET_KEY"] = os.getenv("JWT_SECRET_KEY", "dev-secret")
+jwt = JWTManager(app)
 
-# 2. Add health check at the very top (no dependencies)
+SUPABASE_URL = os.getenv('SUPABASE_URL')
+SUPABASE_KEY = os.getenv('SUPABASE_KEY')
+
+# --- HELPERS ---
+def supabase_req(endpoint, method='GET', data=None):
+    url = f"{SUPABASE_URL.rstrip('/')}/rest/v1/{endpoint}"
+    headers = {
+        'apikey': SUPABASE_KEY,
+        'Authorization': f'Bearer {SUPABASE_KEY}',
+        'Content-Type': 'application/json',
+        'Prefer': 'return=representation'
+    }
+    req_data = json.dumps(data).encode('utf-8') if data else None
+    req = urllib.request.Request(url, data=req_data, headers=headers, method=method)
+    with urllib.request.urlopen(req) as res:
+        res_body = res.read().decode('utf-8')
+        return json.loads(res_body) if res_body else None
+
+# --- ROUTES ---
 @app.route('/api/health')
-def health_check():
-    return jsonify({
-        "status": "online",
-        "python_version": sys.version,
-        "env": "production" if os.getenv('VERCEL') else "development"
-    })
+def health():
+    return jsonify({"status": "online", "supabase": bool(SUPABASE_URL)})
 
-    # 3. Setup core extensions
-    app.config["JWT_SECRET_KEY"] = os.getenv("JWT_SECRET_KEY", "dev-secret")
-    app.config["UPLOAD_FOLDER"] = "/tmp/uploads" # Vercel only allows writing to /tmp
+@app.route('/api/auth/login', methods=['POST'])
+def login():
+    data = request.get_json()
+    email = data.get('email', '').strip().lower()
+    password = data.get('password')
     
-    if not os.path.exists(app.config["UPLOAD_FOLDER"]):
-        os.makedirs(app.config["UPLOAD_FOLDER"])
-
-    # Import extensions from the current package
+    users = supabase_req(f'users?email=eq.{email}&select=*')
+    if not users:
+        return jsonify({"error": "Invalid email or password."}), 401
+    
+    user = users[0]
+    stored_pw = user.get('password')
+    
+    # Check password (handles both hashed and plain)
+    is_valid = False
     try:
-        from .extensions import bcrypt
-        bcrypt.init_app(app)
-    except Exception as e:
-        print(f"Extension load error: {e}")
+        is_valid = pbkdf2_sha256.verify(password, stored_pw)
+    except:
+        is_valid = (password == stored_pw)
+        
+    if not is_valid:
+        return jsonify({"error": "Invalid email or password."}), 401
 
-    JWTManager(app)
-    CORS(app, supports_credentials=True)
+    token = create_access_token(identity=str(user.get('id')))
+    return jsonify({"token": token, "user": user}), 200
 
-# 4. Lazy load routes to prevent startup crash
-def init_routes():
-    try:
-        from routes.auth import auth_bp
-        from routes.rooms import rooms_bp
-        from routes.bookings import bookings_bp
-        from routes.services import services_bp
-        from routes.reviews import reviews_bp
+@app.route('/api/rooms', methods=['GET'])
+def get_rooms():
+    rooms = supabase_req('rooms?select=*')
+    return jsonify({"rooms": rooms or []}), 200
 
-        app.register_blueprint(auth_bp, url_prefix="/api/auth")
-        app.register_blueprint(rooms_bp, url_prefix="/api/rooms")
-        app.register_blueprint(bookings_bp, url_prefix="/api/bookings")
-        app.register_blueprint(services_bp, url_prefix="/api/services")
-        app.register_blueprint(reviews_bp, url_prefix="/api/reviews")
-        print("Routes registered successfully")
-    except Exception as e:
-        print(f"Primary route load failed, trying relative: {e}")
-        try:
-            from .routes.auth import auth_bp
-            from .routes.rooms import rooms_bp
-            from .routes.bookings import bookings_bp
-            from .routes.services import services_bp
-            from .routes.reviews import reviews_bp
-            
-            app.register_blueprint(auth_bp, url_prefix="/api/auth")
-            app.register_blueprint(rooms_bp, url_prefix="/api/rooms")
-            app.register_blueprint(bookings_bp, url_prefix="/api/bookings")
-            app.register_blueprint(services_bp, url_prefix="/api/services")
-            app.register_blueprint(reviews_bp, url_prefix="/api/reviews")
-        except Exception as e2:
-            print(f"All route load methods failed: {e2}")
-
-init_routes()
+@app.route('/api/services', methods=['GET'])
+def get_services():
+    services = supabase_req('services?select=*&is_active=eq.true')
+    return jsonify({"services": services or []}), 200
 
 # Vercel entry point
 handler = app
 
 if __name__ == "__main__":
-    app.run(debug=True, port=5000)
+    app.run(debug=True)
