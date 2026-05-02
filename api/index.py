@@ -69,14 +69,9 @@ def create_app():
 
     return app
 
-try:
-    app = create_app()
-    # Vercel serverless handler - must expose 'handler' variable
-    handler = app
-except Exception as e:
-    import sys
-    print(f"[FATAL] Error creating app: {str(e)}", file=sys.stderr)
-    raise
+# Create app and expose handler for Vercel
+app = create_app()
+handler = app
 
 if __name__ == "__main__":
     app.run(debug=True, port=5000)
