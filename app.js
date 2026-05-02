@@ -828,6 +828,11 @@ createApp({
           showToast(data.error || 'Failed to toggle service.', 'error');
         } else {
           showToast(`${service.name} is now ${newStatus ? 'Public' : 'Hidden'}.`, 'success');
+          // Update the specific service object in the array to ensure UI matches
+          const idx = services.value.findIndex(s => s.id === service.id);
+          if (idx !== -1) {
+            services.value[idx].is_active = newStatus;
+          }
           // Important: refresh services list to ensure frontend is in sync with DB
           await fetchServices();
         }
