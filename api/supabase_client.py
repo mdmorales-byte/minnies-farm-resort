@@ -14,14 +14,13 @@ logger = logging.getLogger(__name__)
 SUPABASE_URL = os.getenv('SUPABASE_URL')
 SUPABASE_KEY = os.getenv('SUPABASE_KEY')
 
-if not SUPABASE_URL or not SUPABASE_KEY:
-    logger.error("SUPABASE_URL or SUPABASE_KEY environment variables are missing!")
-
 def get_headers():
     """Get Supabase API headers"""
+    if not SUPABASE_KEY:
+        logger.error("SUPABASE_KEY is missing from environment!")
     return {
-        'apikey': SUPABASE_KEY,
-        'Authorization': f'Bearer {SUPABASE_KEY}',
+        'apikey': SUPABASE_KEY or "",
+        'Authorization': f'Bearer {SUPABASE_KEY}' if SUPABASE_KEY else "",
         'Content-Type': 'application/json',
         'Prefer': 'return=representation'
     }

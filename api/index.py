@@ -6,8 +6,9 @@ from .extensions import bcrypt
 from .supabase_client import *
 from dotenv import load_dotenv
 
-# Force reload of .env file
-load_dotenv(override=True)
+# Only load .env locally (not on Vercel)
+if not os.getenv('VERCEL'):
+    load_dotenv()
 
 # Deployed with Supabase integration - v2
 
