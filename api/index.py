@@ -34,26 +34,39 @@ def health_check():
     JWTManager(app)
     CORS(app, supports_credentials=True)
 
-    # 4. Lazy load routes to prevent startup crash
-    def init_routes():
+# 4. Lazy load routes to prevent startup crash
+def init_routes():
+    try:
+        from routes.auth import auth_bp
+        from routes.rooms import rooms_bp
+        from routes.bookings import bookings_bp
+        from routes.services import services_bp
+        from routes.reviews import reviews_bp
+
+        app.register_blueprint(auth_bp, url_prefix="/api/auth")
+        app.register_blueprint(rooms_bp, url_prefix="/api/rooms")
+        app.register_blueprint(bookings_bp, url_prefix="/api/bookings")
+        app.register_blueprint(services_bp, url_prefix="/api/services")
+        app.register_blueprint(reviews_bp, url_prefix="/api/reviews")
+        print("Routes registered successfully")
+    except Exception as e:
+        print(f"Primary route load failed, trying relative: {e}")
         try:
-            # Absolute imports within the package
             from .routes.auth import auth_bp
             from .routes.rooms import rooms_bp
             from .routes.bookings import bookings_bp
             from .routes.services import services_bp
             from .routes.reviews import reviews_bp
-
+            
             app.register_blueprint(auth_bp, url_prefix="/api/auth")
             app.register_blueprint(rooms_bp, url_prefix="/api/rooms")
             app.register_blueprint(bookings_bp, url_prefix="/api/bookings")
             app.register_blueprint(services_bp, url_prefix="/api/services")
             app.register_blueprint(reviews_bp, url_prefix="/api/reviews")
-            print("Routes registered successfully")
-        except Exception as e:
-            print(f"Failed to load routes: {e}")
+        except Exception as e2:
+            print(f"All route load methods failed: {e2}")
 
-    init_routes()
+init_routes()
 
 # Vercel entry point
 handler = app
