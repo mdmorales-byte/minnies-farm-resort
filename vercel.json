@@ -28,6 +28,10 @@
       "dest": "minnies-farm-backend/app.py"
     },
     {
+      "src": "/(app\\.js|style\\.css|privacy\\.html)",
+      "dest": "/$1"
+    },
+    {
       "src": "/(.*)",
       "dest": "/index.html"
     }
