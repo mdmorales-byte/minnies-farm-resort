@@ -5,6 +5,7 @@ flask-cors==4.0.1
 flask-bcrypt==1.0.1
 python-dotenv==1.0.1
 pymysql==1.1.1
+psycopg2-binary
 gunicorn==21.2.0
 cryptography==42.0.5
 sendgrid==6.11.0

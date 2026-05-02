@@ -13,10 +13,20 @@ def create_app():
 
     from sqlalchemy.pool import NullPool
     app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {"poolclass": NullPool}
-    app.config["SQLALCHEMY_DATABASE_URI"] = (
-        f"mysql+pymysql://{os.getenv('DB_USER')}:{os.getenv('DB_PASSWORD')}"
-        f"@{os.getenv('DB_HOST')}:{os.getenv('DB_PORT', 3306)}/{os.getenv('DB_NAME')}"
-    )
+    # Detect if we should use PostgreSQL (Supabase) or MySQL
+    db_user = os.getenv('DB_USER')
+    db_pass = os.getenv('DB_PASSWORD')
+    db_host = os.getenv('DB_HOST')
+    db_port = os.getenv('DB_PORT', 5432)
+    db_name = os.getenv('DB_NAME', 'postgres')
+
+    if 'supabase' in db_host.lower() or db_port == '5432':
+        app.config["SQLALCHEMY_DATABASE_URI"] = f"postgresql://{db_user}:{db_pass}@{db_host}:{db_port}/{db_name}"
+    else:
+        app.config["SQLALCHEMY_DATABASE_URI"] = (
+            f"mysql+pymysql://{db_user}:{db_pass}"
+            f"@{db_host}:{db_port}/{db_name}"
+        )
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
     app.config["JWT_SECRET_KEY"] = os.getenv("JWT_SECRET_KEY", "dev-secret")
     app.config["UPLOAD_FOLDER"] = os.path.join(os.getcwd(), "uploads")

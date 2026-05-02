@@ -1,6 +1,8 @@
 const { createApp, ref, computed, onMounted } = Vue;
 
-const API_URL = 'https://minnies-farm-resort.onrender.com/api';
+const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+  ? 'http://127.0.0.1:5000/api'
+  : '/api';
 
 createApp({
   setup() {
