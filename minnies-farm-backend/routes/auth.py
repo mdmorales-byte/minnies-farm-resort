@@ -6,18 +6,11 @@ from flask import Blueprint, request, jsonify, current_app
 from flask_jwt_extended import (
     create_access_token, jwt_required, get_jwt_identity, get_jwt
 )
-from models import User
-from extensions import db, bcrypt
+from extensions import bcrypt
 import secrets, time, threading, os, re
 from sendgrid import SendGridAPIClient
 from sendgrid.helpers.mail import Mail
-
-# Import Supabase client for fallback
-try:
-    import supabase_client
-    USE_SUPABASE = True
-except:
-    USE_SUPABASE = False
+import supabase_client
 
 auth_bp = Blueprint("auth", __name__)
 
@@ -39,17 +32,7 @@ def send_email_background(to_email, subject, html_content):
         try:
             sg_key = os.getenv('SENDGRID_API_KEY')
             if not sg_key:
-                print("❌ SENDGRID_API_KEY not set!")
                 return
-            
-            if not sg_key.startswith('SG.'):
-                print(f"❌ SENDGRID_API_KEY format invalid! Key starts with: {sg_key[:5]}...")
-                return
-            
-            # Debug: Show we're attempting to send
-            print(f"📧 Attempting to send email to {to_email}...")
-            print(f"   Subject: {subject}")
-            print(f"   From: [REDACTED]")
             
             sg = SendGridAPIClient(sg_key)
             message = Mail(
@@ -58,18 +41,10 @@ def send_email_background(to_email, subject, html_content):
                 subject=subject,
                 html_content=html_content
             )
-            response = sg.send(message)
-            print(f"✅ Email sent successfully to {to_email} (HTTP {response.status_code})")
+            sg.send(message)
         except Exception as e:
-            print(f"❌ Email sending failed to {to_email}")
-            print(f"   Error Type: {type(e).__name__}")
-            print(f"   Error Message: {str(e)}")
-            if hasattr(e, 'body'):
-                print(f"   Response Body: {e.body}")
-            import traceback
-            traceback.print_exc()
+            print(f"❌ Email sending failed: {str(e)}")
     
-    # Start email sending in background thread (don't wait for it)
     thread = threading.Thread(target=_send_email, daemon=True)
     thread.start()
 
@@ -85,60 +60,30 @@ def register():
 
     email = data["email"].strip().lower()
     
-    # Validate email format
     if not is_valid_email(email):
-        return jsonify({"error": "Please enter a valid email address (e.g., user@example.com)."}), 400
+        return jsonify({"error": "Please enter a valid email address."}), 400
 
-    # Try SQLAlchemy first, fall back to Supabase
-    try:
-        if User.query.filter_by(email=email).first():
-            return jsonify({"error": "Email is already registered."}), 409
-
-        hashed_pw = bcrypt.generate_password_hash(data["password"]).decode("utf-8")
-        user = User(
-            name        = data["name"],
-            email       = email,
-            password    = hashed_pw,
-            role        = "guest",
-            is_verified = True,
-        )
-        db.session.add(user)
-        db.session.commit()
-    except Exception as e:
-        # Fallback to Supabase
-        if USE_SUPABASE:
-            existing = supabase_client.get_user_by_email(email)
-            if existing:
-                return jsonify({"error": "Email is already registered."}), 409
-            
-            hashed_pw = bcrypt.generate_password_hash(data["password"]).decode("utf-8")
-            user_data = {
-                "name": data["name"],
-                "email": email,
-                "password": hashed_pw,
-                "role": "guest",
-                "is_verified": True
-            }
-            supabase_client.create_user(user_data)
-        else:
-            return jsonify({"error": "Database connection failed."}), 500
-
-    # Send welcome email
+    # Use Supabase
+    existing = supabase_client.get_user_by_email(email)
+    if existing:
+        return jsonify({"error": "Email is already registered."}), 409
+    
+    hashed_pw = bcrypt.generate_password_hash(data["password"]).decode("utf-8")
+    user_data = {
+        "name": data["name"],
+        "email": email,
+        "password": hashed_pw,
+        "role": "guest",
+        "is_verified": True
+    }
+    
+    result = supabase_client.create_user(user_data)
+    
     send_email_background(
         email,
         "Welcome to Minnie's Farm Resort! 🌿",
-        f"""<html><body>
-<h2>Welcome, {data["name"]}!</h2>
-<p>Thank you for registering at Minnie's Farm Resort. We're excited to have you!</p>
-<p>You can now log in and browse our rooms and services.</p>
-<p><a href="https://minnies-farm-resort.vercel.app">Visit our website</a></p>
-<br>
-<p>Best regards,<br>Minnie's Farm Resort Team</p>
-</body></html>"""
+        f"<h2>Welcome, {data['name']}!</h2><p>Thank you for registering.</p>"
     )
-
-    # Email verification temporarily disabled - user auto-verified on registration
-    # TODO: Re-enable email verification once SendGrid is configured properly
 
     return jsonify({"message": "Account created! You can now sign in."}), 201
 
@@ -153,43 +98,28 @@ def login():
 
     email = data["email"].strip().lower()
     
-    # Try SQLAlchemy first, fall back to Supabase
-    user = None
-    try:
-        user = User.query.filter_by(email=email).first()
-    except Exception as e:
-        # SQLAlchemy failed, try Supabase
-        if USE_SUPABASE:
-            user_data = supabase_client.get_user_by_email(email)
-            if user_data:
-                # Create a mock user object for bcrypt check
-                from collections import namedtuple
-                UserMock = namedtuple('UserMock', ['id', 'password', 'to_dict'])
-                user = UserMock(
-                    id=user_data.get('id'),
-                    password=user_data.get('password'),
-                    to_dict=lambda: user_data
-                )
+    # Use Supabase
+    user = supabase_client.get_user_by_email(email)
     
     if not user:
         return jsonify({"error": "Invalid email or password."}), 401
     
-    # Check password - handle both bcrypt hashed and plaintext
+    # Check password (handles both hashed and plain for seeded users)
+    stored_pw = user.get('password')
     password_valid = False
     try:
-        password_valid = bcrypt.check_password_hash(user.password, data["password"])
+        password_valid = bcrypt.check_password_hash(stored_pw, data["password"])
     except ValueError:
-        # If bcrypt fails, check if it's a plaintext match (for seeded users)
-        password_valid = (user.password == data["password"])
+        password_valid = (stored_pw == data["password"])
     
     if not password_valid:
         return jsonify({"error": "Invalid email or password."}), 401
 
-    token = create_access_token(identity=str(user.id))
+    token = create_access_token(identity=str(user.get('id')))
     return jsonify({
         "message": "Login successful!",
         "token":   token,
-        "user":    user.to_dict() if hasattr(user, 'to_dict') else user_data,
+        "user":    user,
     }), 200
 
 
@@ -207,8 +137,10 @@ def logout():
 @jwt_required()
 def me():
     user_id = get_jwt_identity()
-    user    = User.query.get_or_404(user_id)
-    return jsonify({"user": user.to_dict()}), 200
+    user = supabase_client.get_user_by_id(user_id)
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+    return jsonify({"user": user}), 200
 
 
 # ── GOOGLE LOGIN ──────────────────────────────────────────────────────────────

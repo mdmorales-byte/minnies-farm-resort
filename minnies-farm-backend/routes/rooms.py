@@ -1,27 +1,13 @@
 """
 routes/rooms.py
-GET    /api/rooms               – list all rooms (with filters)
-GET    /api/rooms/<id>          – get single room
-POST   /api/rooms               – create room  (staff only)
-PUT    /api/rooms/<id>          – update room  (staff only)
-DELETE /api/rooms/<id>          – delete room  (staff only)
-POST   /api/rooms/<id>/availability – check availability for dates
 """
 
 from flask import Blueprint, request, jsonify, current_app
 from flask_jwt_extended import jwt_required, get_jwt_identity
-from models import Room, Booking, User
-from datetime import date
 import os
 from werkzeug.utils import secure_filename
 import uuid
-
-# Import Supabase client for fallback
-try:
-    import supabase_client
-    USE_SUPABASE = True
-except:
-    USE_SUPABASE = False
+import supabase_client
 
 rooms_bp = Blueprint("rooms", __name__)
 
@@ -36,8 +22,8 @@ def allowed_file(filename):
 # ── helper: staff guard ───────────────────────────────────────────────────────
 def require_staff():
     user_id = get_jwt_identity()
-    user    = User.query.get(user_id)
-    if not user or user.role != "staff":
+    user = supabase_client.get_user_by_id(user_id)
+    if not user or user.get('role') != "staff":
         return None, (jsonify({"error": "Staff access required."}), 403)
     return user, None
 
@@ -45,55 +31,35 @@ def require_staff():
 # ── GET ALL ROOMS (with optional filters) ─────────────────────────────────────
 @rooms_bp.route("", methods=["GET"])
 def get_rooms():
-    # Try SQLAlchemy first
     try:
-        from app import db
-        query = Room.query
-
-        # Filter by type
+        rooms = supabase_client.get_rooms()
+        
+        # Apply filters
         room_type = request.args.get("type")
         if room_type:
-            query = query.filter(Room.type == room_type)
-
-        # Filter by max price
+            rooms = [r for r in rooms if r.get('type') == room_type]
+            
         max_price = request.args.get("max_price")
         if max_price:
-            query = query.filter(Room.price_per_night <= float(max_price))
-
-        # Filter by min capacity
+            rooms = [r for r in rooms if float(r.get('price_per_night', 0)) <= float(max_price)]
+            
         capacity = request.args.get("capacity")
         if capacity:
-            query = query.filter(Room.capacity >= int(capacity))
-
-        rooms = query.all()
-        return jsonify({"rooms": [r.to_dict() for r in rooms]}), 200
-    except Exception:
-        # Fallback to Supabase
-        if USE_SUPABASE:
-            rooms = supabase_client.get_rooms()
+            rooms = [r for r in rooms if int(r.get('capacity', 0)) >= int(capacity)]
             
-            # Apply filters manually for Supabase fallback
-            room_type = request.args.get("type")
-            if room_type:
-                rooms = [r for r in rooms if r.get('type') == room_type]
-                
-            max_price = request.args.get("max_price")
-            if max_price:
-                rooms = [r for r in rooms if float(r.get('price_per_night', 0)) <= float(max_price)]
-                
-            capacity = request.args.get("capacity")
-            if capacity:
-                rooms = [r for r in rooms if int(r.get('capacity', 0)) >= int(capacity)]
-                
-            return jsonify({"rooms": rooms}), 200
-        raise
+        return jsonify({"rooms": rooms}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 
 # ── GET SINGLE ROOM ───────────────────────────────────────────────────────────
 @rooms_bp.route("/<int:room_id>", methods=["GET"])
 def get_room(room_id):
-    room = Room.query.get_or_404(room_id)
-    return jsonify({"room": room.to_dict()}), 200
+    room = supabase_client.get_room_by_id(room_id)
+    if not room:
+        return jsonify({"error": "Room not found"}), 404
+    return jsonify({"room": room}), 200
+
 
 
 # ── CREATE ROOM (staff only) ──────────────────────────────────────────────────
