@@ -115,13 +115,14 @@ def delete_service(service_id):
 # ── AVAIL A SERVICE ───────────────────────────────────────────────────────────
 @services_bp.route("/<int:service_id>/avail", methods=["POST"])
 def avail_service(service_id):
-    from app import db
     """
     Guests can avail while logged in.
     Walk-in guests (no token) can also avail — user_id will be None.
     """
-    service = Service.query.get_or_404(service_id)
-    if not service.is_active:
+    service = supabase_client.get_service_by_id(service_id)
+    if not service:
+        return jsonify({"error": "Service not found"}), 404
+    if not service.get('is_active'):
         return jsonify({"error": "This service is currently unavailable."}), 400
 
     data = request.get_json() or {}
@@ -138,26 +139,27 @@ def avail_service(service_id):
     avail_date = data.get("avail_date", date.today().isoformat())
 
     try:
-        avail_date = date.fromisoformat(avail_date)
+        # Validate date format
+        date.fromisoformat(avail_date)
     except ValueError:
         return jsonify({"error": "Invalid date format. Use YYYY-MM-DD."}), 400
 
-    total_price = float(service.price) * quantity
+    total_price = float(service.get('price', 0)) * quantity
 
-    avail = ServiceAvail(
-        user_id     = int(user_id) if user_id else None,
-        service_id  = service.id,
-        quantity    = quantity,
-        total_price = total_price,
-        avail_date  = avail_date,
-        status      = "confirmed",
-    )
-    db.session.add(avail)
-    db.session.commit()
+    avail_data = {
+        "user_id": int(user_id) if user_id else None,
+        "service_id": service_id,
+        "quantity": quantity,
+        "total_price": total_price,
+        "avail_date": avail_date,
+        "status": "confirmed",
+    }
+
+    result = supabase_client.create_service_avail(avail_data)
 
     return jsonify({
-        "message":     f"'{service.name}' availed successfully! 🎉",
-        "avail":       avail.to_dict(),
+        "message": f"'{service.get('name')}' availed successfully!",
+        "avail": result[0] if result else avail_data,
         "total_price": total_price,
     }), 201
 
@@ -167,19 +169,33 @@ def avail_service(service_id):
 @jwt_required()
 def get_avails():
     user_id = get_jwt_identity()
-    user    = User.query.get_or_404(user_id)
+    user = supabase_client.get_user_by_id(user_id)
 
-    if user.role == "staff":
-        avails = ServiceAvail.query.order_by(ServiceAvail.created_at.desc()).all()
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+
+    if user.get('role') == "staff":
+        avails = supabase_client.get_service_avails() or []
     else:
-        avails = ServiceAvail.query.filter_by(user_id=user_id).order_by(ServiceAvail.created_at.desc()).all()
+        avails = supabase_client.get_service_avails_by_user(user_id) or []
 
+    # Enrich with user and service names
     result = []
     for a in avails:
-        d = a.to_dict()
-        guest = User.query.get(a.user_id) if a.user_id else None
-        d['guest_name'] = guest.name if guest else 'Walk-in'
-        d['service_name'] = a.service.name if a.service else 'Unknown'
+        d = dict(a)
+        guest_id = a.get('user_id')
+        if guest_id:
+            guest = supabase_client.get_user_by_id(guest_id)
+            d['guest_name'] = guest.get('name') if guest else 'Unknown'
+        else:
+            d['guest_name'] = 'Walk-in'
+
+        service_id = a.get('service_id')
+        if service_id:
+            service = supabase_client.get_service_by_id(service_id)
+            d['service_name'] = service.get('name') if service else 'Unknown'
+        else:
+            d['service_name'] = 'Unknown'
         result.append(d)
 
     return jsonify({"avails": result}), 200
@@ -189,39 +205,41 @@ def get_avails():
 @services_bp.route("/avails/<int:avail_id>/status", methods=["PUT"])
 @jwt_required()
 def update_avail_status(avail_id):
-    from app import db
     _, err = require_staff()
     if err:
         return err
 
-    avail = ServiceAvail.query.get_or_404(avail_id)
+    avail = supabase_client.get_service_avail_by_id(avail_id)
+    if not avail:
+        return jsonify({"error": "Service avail not found"}), 404
+
     data = request.get_json()
-    
+
     if not data or 'status' not in data:
         return jsonify({"error": "Status is required"}), 400
-    
+
     valid_statuses = ['pending', 'confirmed', 'completed', 'cancelled']
     if data['status'] not in valid_statuses:
         return jsonify({"error": f"Invalid status. Must be one of: {', '.join(valid_statuses)}"}), 400
-    
-    avail.status = data['status']
-    db.session.commit()
-    
+
+    result = supabase_client.update_service_avail(avail_id, {'status': data['status']})
+
     return jsonify({
         "message": "Service avail status updated successfully.",
-        "avail": avail.to_dict()
+        "avail": result[0] if result else {'status': data['status']}
     }), 200
 
 # ── DELETE AVAIL RECORD (staff only) ─────────────────────────────────────────────
 @services_bp.route("/avails/<int:avail_id>", methods=["DELETE"])
 @jwt_required()
 def delete_avail(avail_id):
-    from app import db
     _, err = require_staff()
     if err:
         return err
 
-    avail = ServiceAvail.query.get_or_404(avail_id)
-    db.session.delete(avail)
-    db.session.commit()
+    avail = supabase_client.get_service_avail_by_id(avail_id)
+    if not avail:
+        return jsonify({"error": "Service avail not found"}), 404
+
+    supabase_client.delete_service_avail(avail_id)
     return jsonify({"message": "Service avail record deleted."}), 200

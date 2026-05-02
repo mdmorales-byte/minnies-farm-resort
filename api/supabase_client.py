@@ -161,3 +161,23 @@ def get_review_by_booking(booking_id):
 
 def create_review(review_data):
     return supabase_request('reviews', method='POST', data=review_data)
+
+# Service Avail operations
+def get_service_avails():
+    return supabase_request('service_avails?select=*&order=created_at.desc')
+
+def get_service_avails_by_user(user_id):
+    return supabase_request(f'service_avails?user_id=eq.{user_id}&select=*&order=created_at.desc')
+
+def get_service_avail_by_id(avail_id):
+    result = supabase_request(f'service_avails?id=eq.{avail_id}&select=*')
+    return result[0] if result else None
+
+def create_service_avail(avail_data):
+    return supabase_request('service_avails', method='POST', data=avail_data)
+
+def update_service_avail(avail_id, avail_data):
+    return supabase_request(f'service_avails?id=eq.{avail_id}', method='PATCH', data=avail_data)
+
+def delete_service_avail(avail_id):
+    return supabase_request(f'service_avails?id=eq.{avail_id}', method='DELETE')
