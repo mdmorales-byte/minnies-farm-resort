@@ -11,6 +11,8 @@ from sendgrid.helpers.mail import Mail
 # Force reload of .env file
 load_dotenv(override=True)
 
+# Deployed with Supabase integration - v2
+
 def create_app():
     app = Flask(__name__)
 
