@@ -137,7 +137,9 @@ def create_app():
 
     @app.route("/api/seed-all")
     def seed_all():
-        from models import User, Room, Service
+        from models import User, Room, Service, Booking, ServiceAvail, Review
+        # Use a more robust reset for PostgreSQL/Supabase
+        db.reflect()
         db.drop_all()
         db.create_all()
         users = [
