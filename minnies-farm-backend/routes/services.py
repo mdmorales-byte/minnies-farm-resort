@@ -31,7 +31,26 @@ def require_staff():
 @services_bp.route("", methods=["GET"])
 def get_services():
     try:
-        services = Service.query.filter_by(is_active=True).all()
+        # Check if staff access is requested via header or parameter (optional)
+        # For now, let's just return all services if the user is a staff member
+        is_staff = False
+        try:
+            verify_jwt_in_request(optional=True)
+            user_id = get_jwt_identity()
+            if user_id:
+                user = User.query.get(user_id)
+                if user and user.role == "staff":
+                    is_staff = True
+        except Exception:
+            pass
+
+        if is_staff:
+            # Staff sees EVERYTHING (active and hidden)
+            services = Service.query.all()
+        else:
+            # Guests ONLY see active services
+            services = Service.query.filter_by(is_active=True).all()
+            
         return jsonify({"services": [s.to_dict() for s in services]}), 200
     except Exception as e:
         print(f"Error fetching services: {str(e)}")
