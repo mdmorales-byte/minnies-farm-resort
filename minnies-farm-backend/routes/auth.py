@@ -12,6 +12,13 @@ import secrets, time, threading, os, re
 from sendgrid import SendGridAPIClient
 from sendgrid.helpers.mail import Mail
 
+# Import Supabase client for fallback
+try:
+    import supabase_client
+    USE_SUPABASE = True
+except:
+    USE_SUPABASE = False
+
 auth_bp = Blueprint("auth", __name__)
 
 BLOCKLIST = set()
@@ -82,19 +89,39 @@ def register():
     if not is_valid_email(email):
         return jsonify({"error": "Please enter a valid email address (e.g., user@example.com)."}), 400
 
-    if User.query.filter_by(email=email).first():
-        return jsonify({"error": "Email is already registered."}), 409
+    # Try SQLAlchemy first, fall back to Supabase
+    try:
+        if User.query.filter_by(email=email).first():
+            return jsonify({"error": "Email is already registered."}), 409
 
-    hashed_pw = bcrypt.generate_password_hash(data["password"]).decode("utf-8")
-    user = User(
-        name        = data["name"],
-        email       = email,  # Use normalized email
-        password    = hashed_pw,
-        role        = "guest",
-        is_verified = True,  # Auto-verify on registration
-    )
-    db.session.add(user)
-    db.session.commit()
+        hashed_pw = bcrypt.generate_password_hash(data["password"]).decode("utf-8")
+        user = User(
+            name        = data["name"],
+            email       = email,
+            password    = hashed_pw,
+            role        = "guest",
+            is_verified = True,
+        )
+        db.session.add(user)
+        db.session.commit()
+    except Exception as e:
+        # Fallback to Supabase
+        if USE_SUPABASE:
+            existing = supabase_client.get_user_by_email(email)
+            if existing:
+                return jsonify({"error": "Email is already registered."}), 409
+            
+            hashed_pw = bcrypt.generate_password_hash(data["password"]).decode("utf-8")
+            user_data = {
+                "name": data["name"],
+                "email": email,
+                "password": hashed_pw,
+                "role": "guest",
+                "is_verified": True
+            }
+            supabase_client.create_user(user_data)
+        else:
+            return jsonify({"error": "Database connection failed."}), 500
 
     # Send welcome email
     send_email_background(
@@ -125,16 +152,44 @@ def login():
         return jsonify({"error": "Email and password are required."}), 400
 
     email = data["email"].strip().lower()
-    user = User.query.filter_by(email=email).first()
-
-    if not user or not bcrypt.check_password_hash(user.password, data["password"]):
+    
+    # Try SQLAlchemy first, fall back to Supabase
+    user = None
+    try:
+        user = User.query.filter_by(email=email).first()
+    except Exception as e:
+        # SQLAlchemy failed, try Supabase
+        if USE_SUPABASE:
+            user_data = supabase_client.get_user_by_email(email)
+            if user_data:
+                # Create a mock user object for bcrypt check
+                from collections import namedtuple
+                UserMock = namedtuple('UserMock', ['id', 'password', 'to_dict'])
+                user = UserMock(
+                    id=user_data.get('id'),
+                    password=user_data.get('password'),
+                    to_dict=lambda: user_data
+                )
+    
+    if not user:
+        return jsonify({"error": "Invalid email or password."}), 401
+    
+    # Check password - handle both bcrypt hashed and plaintext
+    password_valid = False
+    try:
+        password_valid = bcrypt.check_password_hash(user.password, data["password"])
+    except ValueError:
+        # If bcrypt fails, check if it's a plaintext match (for seeded users)
+        password_valid = (user.password == data["password"])
+    
+    if not password_valid:
         return jsonify({"error": "Invalid email or password."}), 401
 
     token = create_access_token(identity=str(user.id))
     return jsonify({
         "message": "Login successful!",
         "token":   token,
-        "user":    user.to_dict(),
+        "user":    user.to_dict() if hasattr(user, 'to_dict') else user_data,
     }), 200
 
 

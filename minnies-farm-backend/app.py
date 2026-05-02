@@ -1,33 +1,20 @@
 import os
+import threading
 from flask import Flask, send_from_directory
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager
-from extensions import db, bcrypt
+from extensions import bcrypt
 from dotenv import load_dotenv
-import os
+from sendgrid import SendGridAPIClient
+from sendgrid.helpers.mail import Mail
 
-load_dotenv()
+# Force reload of .env file
+load_dotenv(override=True)
 
 def create_app():
     app = Flask(__name__)
 
-    from sqlalchemy.pool import NullPool
-    app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {"poolclass": NullPool}
-    # Detect if we should use PostgreSQL (Supabase) or MySQL
-    db_user = os.getenv('DB_USER')
-    db_pass = os.getenv('DB_PASSWORD')
-    db_host = os.getenv('DB_HOST')
-    db_port = os.getenv('DB_PORT', 5432)
-    db_name = os.getenv('DB_NAME', 'postgres')
-
-    if 'supabase' in db_host.lower() or db_port == '5432':
-        app.config["SQLALCHEMY_DATABASE_URI"] = f"postgresql://{db_user}:{db_pass}@{db_host}:{db_port}/{db_name}"
-    else:
-        app.config["SQLALCHEMY_DATABASE_URI"] = (
-            f"mysql+pymysql://{db_user}:{db_pass}"
-            f"@{db_host}:{db_port}/{db_name}"
-        )
-    app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+    # Config
     app.config["JWT_SECRET_KEY"] = os.getenv("JWT_SECRET_KEY", "dev-secret")
     app.config["UPLOAD_FOLDER"] = os.path.join(os.getcwd(), "uploads")
     app.config["MAX_CONTENT_LENGTH"] = 16 * 1024 * 1024  # 16MB limit
@@ -40,9 +27,16 @@ def create_app():
     def uploaded_file(filename):
         return send_from_directory(app.config["UPLOAD_FOLDER"], filename)
 
-    db.init_app(app)
     bcrypt.init_app(app)
     JWTManager(app)
+    
+    # Load Supabase config
+    supabase_url = os.getenv('SUPABASE_URL')
+    supabase_key = os.getenv('SUPABASE_KEY')
+    if supabase_url and supabase_key:
+        print(f"[Supabase] Connected to: {supabase_url}")
+    else:
+        print("[Warning] SUPABASE_URL or SUPABASE_KEY not set!")
     
     # CORS configuration - allow frontend origins
     CORS(app, 
@@ -135,13 +129,180 @@ def create_app():
         db.session.commit()
         return {"status": "Staff created!"}, 200
 
+    @app.route("/api/test-db")
+    def test_db():
+        """Test database connection and show current config (without sensitive data)"""
+        try:
+            # Test basic connection
+            from sqlalchemy import text
+            result = db.session.execute(text("SELECT version()"))
+            version = result.fetchone()[0]
+            
+            # Get connection info
+            db_info = {
+                "status": "✅ Connected",
+                "database_version": version,
+                "db_host": db_host,
+                "db_port": db_port,
+                "db_name": db_name,
+                "db_user": db_user,
+                "uri_preview": f"postgresql://{db_user}:****@{db_host}:{db_port}/{db_name}" if 'supabase' in db_host.lower() or db_port == '5432' else f"mysql://{db_user}:****@{db_host}:{db_port}/{db_name}"
+            }
+            return db_info, 200
+        except Exception as e:
+            return {
+                "status": "❌ Connection Failed",
+                "error": str(e),
+                "error_type": type(e).__name__,
+                "db_host": db_host,
+                "db_port": db_port,
+                "db_name": db_name,
+                "db_user": db_user,
+                "suggestion": "Check DB_USER format. For Supabase pooler, use 'postgres.yrmmuuaomglqoevooyxu'"
+            }, 500
+
+    @app.route("/api/test-supabase")
+    def test_supabase():
+        """Test Supabase REST API connection using HTTP requests"""
+        try:
+            import urllib.request
+            import json
+            
+            supabase_url = os.getenv('SUPABASE_URL')
+            supabase_key = os.getenv('SUPABASE_KEY')
+            
+            if not supabase_url or not supabase_key:
+                return {"error": "SUPABASE_URL or SUPABASE_KEY not set in .env"}, 500
+            
+            # Test Supabase REST API directly - try auth health first
+            headers = {
+                'apikey': supabase_key,
+                'Authorization': f'Bearer {supabase_key}'
+            }
+            
+            # Try the auth health endpoint first (usually accessible)
+            req = urllib.request.Request(
+                f'{supabase_url}/auth/v1/health',
+                headers=headers,
+                method='GET'
+            )
+            
+            try:
+                with urllib.request.urlopen(req, timeout=15) as response:
+                    result = json.loads(response.read())
+                    return {
+                        "status": "✅ Supabase REST API Connected",
+                        "url": supabase_url,
+                        "auth_health": result,
+                        "note": "API is accessible. You need 'service_role' key for full access."
+                    }, 200
+            except urllib.error.HTTPError as e:
+                error_body = e.read().decode()
+                if e.code == 401:
+                    # API responds but needs service_role key
+                    return {
+                        "status": "✅ Supabase API Responding (needs service_role key)",
+                        "url": supabase_url,
+                        "http_code": e.code,
+                        "error": json.loads(error_body) if error_body else "Auth required",
+                        "solution": "Get the 'service_role' key from Supabase Dashboard > Project Settings > API"
+                    }, 200
+                else:
+                    return {
+                        "status": f"⚠️ Supabase API Error (HTTP {e.code})",
+                        "url": supabase_url,
+                        "error": error_body
+                    }, 500
+            
+        except Exception as e:
+            return {
+                "status": "❌ Supabase Connection Failed",
+                "error": str(e),
+                "error_type": type(e).__name__
+            }, 500
+
+    @app.route("/api/seed-supabase")
+    def seed_supabase():
+        """Seed Supabase database using REST API"""
+        try:
+            import urllib.request
+            import json
+            import base64
+            
+            supabase_url = os.getenv('SUPABASE_URL')
+            supabase_key = os.getenv('SUPABASE_KEY')
+            
+            if not supabase_url or not supabase_key:
+                return {"error": "SUPABASE_URL or SUPABASE_KEY not set"}, 500
+            
+            # Debug: Check what key we're using
+            key_preview = supabase_key[:30] + '...' if supabase_key else 'None'
+            
+            # Decode JWT to check role
+            jwt_role = 'unknown'
+            try:
+                parts = supabase_key.split('.')
+                if len(parts) == 3:
+                    payload = parts[1]
+                    payload += '=' * (4 - len(payload) % 4)
+                    decoded = base64.b64decode(payload)
+                    jwt_data = json.loads(decoded)
+                    jwt_role = jwt_data.get('role', 'unknown')
+            except Exception as e:
+                jwt_role = f'error: {e}'
+            
+            headers = {
+                'apikey': supabase_key,
+                'Authorization': f'Bearer {supabase_key}',
+                'Content-Type': 'application/json',
+                'Prefer': 'return=minimal'
+            }
+            
+            # Try to insert users directly via REST API
+            users = [
+                {"name": "Mick Daniel Morales", "email": "staff@resort.com", "password": "staff123", "role": "staff", "is_verified": True},
+                {"name": "Althea Louise Camano", "email": "guest@resort.com", "password": "guest123", "role": "guest", "is_verified": True}
+            ]
+            
+            results = []
+            for user in users:
+                try:
+                    req = urllib.request.Request(
+                        f'{supabase_url}/rest/v1/users',
+                        data=json.dumps(user).encode('utf-8'),
+                        headers=headers,
+                        method='POST'
+                    )
+                    with urllib.request.urlopen(req, timeout=15) as response:
+                        results.append(f"Created user: {user['email']}")
+                except urllib.error.HTTPError as e:
+                    if e.code == 409:
+                        results.append(f"User exists: {user['email']}")
+                    else:
+                        results.append(f"Error creating {user['email']}: {e.read().decode()}")
+            
+            return {
+                "status": "Seeding attempted via Supabase API",
+                "results": results,
+                "debug": {
+                    "key_preview": key_preview,
+                    "jwt_role": jwt_role
+                }
+            }, 200
+            
+        except Exception as e:
+            return {"error": str(e), "type": type(e).__name__}, 500
+
     @app.route("/api/seed-all")
     def seed_all():
         from models import User, Room, Service, Booking, ServiceAvail, Review
-        # Use a more robust reset for PostgreSQL/Supabase
-        db.reflect()
-        db.drop_all()
-        db.create_all()
+        try:
+            # Use a more robust reset for PostgreSQL/Supabase
+            db.reflect()
+            db.drop_all()
+            db.create_all()
+        except Exception as e:
+            return {"error": f"Database reset failed: {str(e)}", "type": type(e).__name__}, 500
         users = [
             User(name="Mick Daniel Morales", email="staff@resort.com", password=bcrypt.generate_password_hash("staff123").decode(), role="staff", is_verified=True),
             User(name="Althea Louise Camano", email="guest@resort.com", password=bcrypt.generate_password_hash("guest123").decode(), role="guest", is_verified=True),
