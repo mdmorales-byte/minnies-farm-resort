@@ -13,7 +13,7 @@ DELETE /api/services/avails/<id> – delete avail record (staff only)
 
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity, verify_jwt_in_request
-import supabase_client
+from .. import supabase_client
 from datetime import date
 
 services_bp = Blueprint("services", __name__)

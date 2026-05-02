@@ -119,3 +119,45 @@ def update_service(service_id, service_data):
 
 def delete_service(service_id):
     return supabase_request(f'services?id=eq.{service_id}', method='DELETE')
+
+# Booking operations
+def get_bookings():
+    return supabase_request('bookings?select=*')
+
+def get_bookings_by_user(user_id):
+    return supabase_request(f'bookings?user_id=eq.{user_id}&select=*')
+
+def get_booking_by_id(booking_id):
+    result = supabase_request(f'bookings?id=eq.{booking_id}&select=*')
+    return result[0] if result else None
+
+def create_booking(booking_data):
+    return supabase_request('bookings', method='POST', data=booking_data)
+
+def update_booking(booking_id, booking_data):
+    return supabase_request(f'bookings?id=eq.{booking_id}', method='PATCH', data=booking_data)
+
+def delete_booking(booking_id):
+    return supabase_request(f'bookings?id=eq.{booking_id}', method='DELETE')
+
+def check_booking_conflict(room_id, check_in, check_out, exclude_id=None):
+    """Check if there are conflicting bookings for a room"""
+    query = f'bookings?room_id=eq.{room_id}&status=in.(confirmed,pending)&check_in_date=lt.{check_out}&check_out_date=gt.{check_in}&select=*'
+    if exclude_id:
+        query += f'&id=neq.{exclude_id}'
+    return supabase_request(query)
+
+# Review operations
+def get_reviews_by_room(room_id):
+    return supabase_request(f'reviews?room_id=eq.{room_id}&select=*&order=created_at.desc')
+
+def get_review_by_id(review_id):
+    result = supabase_request(f'reviews?id=eq.{review_id}&select=*')
+    return result[0] if result else None
+
+def get_review_by_booking(booking_id):
+    result = supabase_request(f'reviews?booking_id=eq.{booking_id}&select=*')
+    return result[0] if result else None
+
+def create_review(review_data):
+    return supabase_request('reviews', method='POST', data=review_data)

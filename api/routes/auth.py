@@ -6,11 +6,11 @@ from flask import Blueprint, request, jsonify, current_app
 from flask_jwt_extended import (
     create_access_token, jwt_required, get_jwt_identity, get_jwt
 )
-from extensions import bcrypt
+from ..extensions import bcrypt
 import secrets, time, threading, os, re
 from sendgrid import SendGridAPIClient
 from sendgrid.helpers.mail import Mail
-import supabase_client
+from .. import supabase_client
 
 auth_bp = Blueprint("auth", __name__)
 
@@ -154,21 +154,20 @@ def google_login():
     if not email or not google_id:
         return jsonify({'error': 'Invalid Google credentials'}), 400
 
-    user = User.query.filter_by(email=email).first()
+    user = supabase_client.get_user_by_email(email)
 
     if not user:
-        user = User(
-            name        = name,
-            email       = email,
-            password    = bcrypt.generate_password_hash(google_id).decode('utf-8'),
-            role        = 'guest',
-            is_verified = True,
-        )
-        db.session.add(user)
-        db.session.commit()
+        user_data = {
+            'name': name,
+            'email': email,
+            'password': bcrypt.generate_password_hash(google_id).decode('utf-8'),
+            'role': 'guest',
+            'is_verified': True
+        }
+        user = supabase_client.create_user(user_data)
 
-    token = create_access_token(identity=str(user.id))
-    return jsonify({'token': token, 'user': user.to_dict()}), 200
+    token = create_access_token(identity=str(user.get('id')))
+    return jsonify({'token': token, 'user': user}), 200
 
 
 # ── FORGOT PASSWORD ────────────────────────────────────────────────────────────
@@ -181,11 +180,12 @@ def forgot_password():
         return jsonify({'error': 'Email is required.'}), 400
 
     email = email.strip().lower()
-    user = User.query.filter_by(email=email).first()
+    user = supabase_client.get_user_by_email(email)
 
     if user:
         token = secrets.token_urlsafe(32)
-        RESET_TOKENS[token] = {'user_id': user.id, 'expires': time.time() + 3600}
+        user_id = user.get('id')
+        RESET_TOKENS[token] = {'user_id': user_id, 'expires': time.time() + 3600}
         reset_link = f"https://minnies-farm-resort.vercel.app?reset_token={token}"
 
         send_email_background(
@@ -193,7 +193,7 @@ def forgot_password():
             "Reset Your Password - Minnie's Farm Resort",
             f"""<html><body>
 <h2>Minnie's Farm Resort</h2>
-<p>Hi {user.name},</p>
+<p>Hi {user.get('name')},</p>
 <p>We received a request to reset your password. Click the link below:</p>
 <p><a href="{reset_link}">Reset My Password</a></p>
 <p>This link expires in 1 hour.</p>
@@ -221,12 +221,13 @@ def reset_password():
         del RESET_TOKENS[token]
         return jsonify({'error': 'Reset token has expired.'}), 400
 
-    user = User.query.get(token_data['user_id'])
+    user = supabase_client.get_user_by_id(token_data['user_id'])
     if not user:
         return jsonify({'error': 'User not found.'}), 404
 
-    user.password = bcrypt.generate_password_hash(new_password).decode('utf-8')
-    db.session.commit()
+    # Update password via Supabase
+    hashed_pw = bcrypt.generate_password_hash(new_password).decode('utf-8')
+    supabase_client.update_user(user.get('id'), {'password': hashed_pw})
     del RESET_TOKENS[token]
     return jsonify({'message': 'Password reset successfully!'}), 200
 
@@ -246,11 +247,11 @@ def verify_email():
         del VERIFY_TOKENS[token]
         return jsonify({"error": "Token has expired."}), 400
 
-    user = User.query.get(token_data['user_id'])
+    user = supabase_client.get_user_by_id(token_data['user_id'])
     if not user:
         return jsonify({"error": "User not found."}), 404
 
-    user.is_verified = True
-    db.session.commit()
+    # Update verification status via Supabase
+    supabase_client.update_user(user.get('id'), {'is_verified': True})
     del VERIFY_TOKENS[token]
     return jsonify({"message": "Email verified! You can now sign in."}), 200

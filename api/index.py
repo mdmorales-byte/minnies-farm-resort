@@ -2,7 +2,8 @@ import os
 from flask import Flask, send_from_directory
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager
-from extensions import bcrypt
+from .extensions import bcrypt
+from .supabase_client import *
 from dotenv import load_dotenv
 
 # Force reload of .env file
@@ -54,11 +55,11 @@ def create_app():
     if not os.getenv('SENDGRID_API_KEY'):
         print("⚠️  WARNING: SENDGRID_API_KEY environment variable is NOT SET! Email sending will not work.")
 
-    from routes.auth import auth_bp
-    from routes.rooms import rooms_bp
-    from routes.bookings import bookings_bp
-    from routes.services import services_bp
-    from routes.reviews import reviews_bp
+    from .routes.auth import auth_bp
+    from .routes.rooms import rooms_bp
+    from .routes.bookings import bookings_bp
+    from .routes.services import services_bp
+    from .routes.reviews import reviews_bp
 
     app.register_blueprint(auth_bp, url_prefix="/api/auth")
     app.register_blueprint(rooms_bp, url_prefix="/api/rooms")

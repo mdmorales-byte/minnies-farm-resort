@@ -7,7 +7,7 @@ from flask_jwt_extended import jwt_required, get_jwt_identity
 import os
 from werkzeug.utils import secure_filename
 import uuid
-import supabase_client
+from .. import supabase_client
 
 rooms_bp = Blueprint("rooms", __name__)
 
