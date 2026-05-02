@@ -76,11 +76,12 @@ def create_service():
         return jsonify({"error": "'name' and 'price' are required."}), 400
 
     service = Service(
-        name        = data["name"],
-        description = data.get("description", ""),
-        price       = float(data["price"]),
-        category    = data.get("category", "day_service"),
-        is_active   = True,
+        name           = data["name"],
+        description    = data.get("description", ""),
+        price          = float(data["price"]),
+        category       = data.get("category", "day_service"),
+        stock_quantity = int(data.get("stock_quantity", -1)),
+        is_active      = data.get("is_active", True),
     )
     db.session.add(service)
     db.session.commit()
@@ -101,9 +102,10 @@ def update_service(service_id):
 
     service.name        = data.get("name",        service.name)
     service.description = data.get("description", service.description)
-    service.price       = data.get("price",       service.price)
-    service.category    = data.get("category",    service.category)
-    service.is_active   = data.get("is_active",   service.is_active)
+    service.price          = data.get("price",          service.price)
+    service.category       = data.get("category",       service.category)
+    service.stock_quantity = data.get("stock_quantity", service.stock_quantity)
+    service.is_active      = data.get("is_active",      service.is_active)
     db.session.commit()
     return jsonify({"message": "Service updated!", "service": service.to_dict()}), 200
 
