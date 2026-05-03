@@ -192,6 +192,12 @@ def handle_rooms():
         # GET logic
         rooms = supabase_req('rooms?select=*')
         if rooms and isinstance(rooms, list):
+            # Debug: show room statuses
+            statuses = {}
+            for r in rooms:
+                s = r.get('room_status', 'unknown')
+                statuses[s] = statuses.get(s, 0) + 1
+            print(f"Rooms GET - total: {len(rooms)}, statuses: {statuses}")
             for room in rooms:
                 # FORCE AMENITIES TO BE A CLEAN LIST OF WORDS
                 raw = room.get('amenities', '')
@@ -220,15 +226,17 @@ def handle_services():
             
         # GET logic
         staff_param = request.args.get('staff', 'false').lower()
-        # Treat 'undefined' or empty as false for security
         is_staff = (staff_param == 'true')
+        print(f"Services GET - staff_param: '{staff_param}', is_staff: {is_staff}")
         
         if is_staff:
             # Staff sees everything
             services = supabase_req('services?select=*')
+            print(f"Staff view - total services: {len(services) if services else 0}")
         else:
             # Guests ONLY see active services
             services = supabase_req('services?is_active=eq.true&select=*')
+            print(f"Public view - active services: {len(services) if services else 0}")
             
         return jsonify({"services": services or []}), 200
     except Exception as e:
