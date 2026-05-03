@@ -55,6 +55,8 @@ def supabase_req(endpoint, method='GET', data=None):
         adapter = requests.adapters.HTTPAdapter(max_retries=5)
         session.mount('https://', adapter)
         
+        print(f"Supabase API Call: {method} {url}")
+        
         if method == 'GET':
             # Add cache-busting timestamp for GET requests to bypass Supabase CDN cache
             import time
@@ -70,6 +72,7 @@ def supabase_req(endpoint, method='GET', data=None):
         else:
             return None
             
+        print(f"Supabase Response: {res.status_code} - {res.text[:200]}")
         res.raise_for_status()
         return res.json() if res.text else []
         
