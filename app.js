@@ -692,42 +692,42 @@ createApp({
       const file = event.target.files[0];
       if (!file) return;
 
-      // Local compression check: if file is large, warn user
-      if (file.size > 4000000) {
-        showToast('File is too large (>4MB). Please use a smaller image.', 'error');
-        return;
-      }
-
-      const formData = new FormData();
-      formData.append('image', file);
-
       showToast(`Uploading image ${index}... 📤`, 'info');
 
-      try {
-        const res = await fetch(`${API_URL}/rooms/upload-image`, {
-          method: 'POST',
-          headers: { 'Authorization': `Bearer ${token.value}` },
-          body: formData
-        });
+      // Use FileReader to send as Base64 (More reliable on Vercel)
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = async () => {
+        const base64Data = reader.result;
+        try {
+          const res = await fetch(`${API_URL}/rooms/upload-image`, {
+            method: 'POST',
+            headers: { 
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token.value}` 
+            },
+            body: JSON.stringify({ image: base64Data })
+          });
 
-        const data = await res.json();
-        if (res.ok) {
-          const fieldName = 'image_url' + (index === 1 ? '' : '_' + index);
-          roomForm.value[fieldName] = data.image_url;
-          showToast(`Image ${index} uploaded! 📸`, 'success');
-        } else {
-          showToast(data.error || 'Upload failed', 'error');
+          const data = await res.json();
+          if (res.ok) {
+            const fieldName = 'image_url' + (index === 1 ? '' : '_' + index);
+            roomForm.value[fieldName] = data.image_url;
+            showToast(`Image ${index} uploaded! 📸`, 'success');
+          } else {
+            showToast(data.error || 'Upload failed', 'error');
+          }
+        } catch (err) {
+          showToast('Upload error: ' + err.message, 'error');
         }
-      } catch (err) {
-        showToast('Upload error: ' + err.message, 'error');
-      }
+      };
     }
 
     // ── SERVICES ──────────────────────────────────────
     async function fetchServices() {
       try {
-        // Fix: Use the reactive user value correctly
-        const isStaff = authUser.value && authUser.value.role === 'staff';
+        // Fix: Use 'currentUser' instead of 'authUser'
+        const isStaff = currentUser.value && currentUser.value.role === 'staff';
         const res = await fetch(`${API_URL}/services?staff=${isStaff}`);
         if (res.ok) { 
           const data = await res.json(); 

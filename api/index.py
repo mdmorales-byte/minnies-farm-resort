@@ -297,9 +297,22 @@ def handle_single_service(service_id):
 
 @app.route('/api/rooms/upload-image', methods=['POST'])
 def upload_image():
-    # Vercel has a 4.5MB limit for serverless functions, which is why 413 error happens.
-    # For now, we return a message suggesting to use small files.
-    return jsonify({"error": "File size too large for direct upload. Please use a smaller image (<4MB)."}), 413
+    try:
+        data = request.get_json()
+        base64_image = data.get('image')
+        
+        if not base64_image:
+            return jsonify({"error": "No image data provided"}), 400
+            
+        # In a real app, we would upload this to Supabase Storage.
+        # For now, we return the base64 string directly as the image URL 
+        # so it displays instantly on the dashboard/rooms page.
+        return jsonify({
+            "message": "Image uploaded successfully!",
+            "image_url": base64_image
+        }), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 # Vercel entry point
 handler = app
