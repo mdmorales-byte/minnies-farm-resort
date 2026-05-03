@@ -481,21 +481,48 @@ createApp({
 
     // ── BOOKINGS ─────────────────────────────────────────
     async function doBook() {
-      if (!currentUser.value) { navigate('auth'); return; }
-      if (bookingNights.value <= 0) return;
+      if (!currentUser.value) { 
+        showToast('Please login to book a room! 🔐', 'info');
+        navigate('auth'); 
+        return; 
+      }
+      if (bookingNights.value <= 0) {
+        showToast('Please select valid dates! 📅', 'error');
+        return;
+      }
       loading.value = true;
       try {
         const res = await fetch(`${API_URL}/bookings`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token.value}` },
-          body: JSON.stringify({ room_id: selectedRoom.value.id, check_in_date: bookingForm.value.checkIn, check_out_date: bookingForm.value.checkOut, num_guests: bookingForm.value.guests })
+          body: JSON.stringify({ 
+            room_id: selectedRoom.value.id, 
+            check_in_date: bookingForm.value.checkIn, 
+            check_out_date: bookingForm.value.checkOut, 
+            num_guests: bookingForm.value.guests,
+            total_price: bookingTotal.value,
+            user_id: currentUser.value.id
+          })
         });
         const data = await res.json();
-        if (!res.ok) { authMsg.value = data.error || 'Booking failed'; authMsgType.value = 'error'; return; }
-        lastBooking.value = { ref: data.booking.reference_code, room: selectedRoom.value.name, checkIn: data.booking.check_in_date, checkOut: data.booking.check_out_date, guests: data.booking.num_guests, total: data.booking.total_price };
+        if (!res.ok) { 
+          showToast(data.error || 'Booking failed', 'error'); 
+          return; 
+        }
+        showToast('Booking successful! 🎉', 'success');
+        lastBooking.value = { 
+          ref: data.booking.reference_code || 'REF-' + Date.now(), 
+          room: selectedRoom.value.name, 
+          checkIn: data.booking.check_in_date, 
+          checkOut: data.booking.check_out_date, 
+          guests: data.booking.num_guests, 
+          total: data.booking.total_price 
+        };
         await fetchUserBookings();
         navigate('confirm');
-      } catch (err) { authMsg.value = 'Connection error: ' + err.message; authMsgType.value = 'error'; }
+      } catch (err) { 
+        showToast('Connection error: ' + err.message, 'error'); 
+      }
       loading.value = false;
     }
 
