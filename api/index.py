@@ -13,26 +13,38 @@ CORS(app)
 app.config["JWT_SECRET_KEY"] = os.getenv("JWT_SECRET_KEY", "dev-secret")
 jwt = JWTManager(app)
 
-SUPABASE_URL = os.getenv('SUPABASE_URL')
-SUPABASE_KEY = os.getenv('SUPABASE_KEY')
+# Use a more robust way to get env vars
+SUPABASE_URL = os.environ.get('SUPABASE_URL') or os.getenv('SUPABASE_URL')
+SUPABASE_KEY = os.environ.get('SUPABASE_KEY') or os.getenv('SUPABASE_KEY')
 
 # STARTUP DEBUG REPORT
 print("--- VERCEL STARTUP REPORT ---")
-print(f"SUPABASE_URL exists: {bool(SUPABASE_URL)}")
-print(f"SUPABASE_KEY exists: {bool(SUPABASE_KEY)}")
-if SUPABASE_URL: print(f"URL: {SUPABASE_URL[:15]}...")
+print(f"SUPABASE_URL present: {bool(SUPABASE_URL)}")
+print(f"SUPABASE_KEY present: {bool(SUPABASE_KEY)}")
+if SUPABASE_URL: 
+    print(f"URL: {SUPABASE_URL}")
+else:
+    print("CRITICAL: SUPABASE_URL IS MISSING!")
 print("----------------------------")
 
 # --- HELPERS ---
 def supabase_req(endpoint, method='GET', data=None):
+    if not SUPABASE_URL or not SUPABASE_KEY:
+        print("Error: Supabase credentials missing during request")
+        return None
+        
     try:
-        url = f"{SUPABASE_URL.rstrip('/')}/rest/v1/{endpoint}"
+        # Ensure URL is clean
+        base_url = SUPABASE_URL.strip().rstrip('/')
+        url = f"{base_url}/rest/v1/{endpoint}"
+        
         headers = {
-            'apikey': SUPABASE_KEY,
-            'Authorization': f'Bearer {SUPABASE_KEY}',
+            'apikey': SUPABASE_KEY.strip(),
+            'Authorization': f'Bearer {SUPABASE_KEY.strip()}',
             'Content-Type': 'application/json',
             'Prefer': 'return=representation'
         }
+        # ... rest of helper remains same
         req_data = json.dumps(data).encode('utf-8') if data else None
         req = urllib.request.Request(url, data=req_data, headers=headers, method=method)
         with urllib.request.urlopen(req) as res:
