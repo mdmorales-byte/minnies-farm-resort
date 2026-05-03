@@ -107,7 +107,11 @@ def login():
         email = data.get('email', '').strip().lower()
         password = data.get('password')
         
+        print(f"Login attempt for: {email}")
+        
         users = supabase_req(f'users?email=eq.{email}&select=*')
+        print(f"Users found: {len(users) if users else 0}")
+        
         if not users:
             return jsonify({"error": "Invalid email or password."}), 401
         
