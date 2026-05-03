@@ -658,7 +658,11 @@ createApp({
             room_status: roomForm.value.room_status,
           })
         });
-        if (res.ok) { await fetchRooms(); showRoomModal.value = false; }
+        if (res.ok) { 
+          await fetchRooms(); 
+          showRoomModal.value = false;
+          showToast(editingRoom.value ? 'Room updated! 🏠' : 'Room created! 🏠', 'success');
+        }
         else { const data = await res.json(); alert(data.error || 'Error saving room'); }
       } catch (err) { alert('Connection error: ' + err.message); }
       loading.value = false;
@@ -726,12 +730,12 @@ createApp({
     // ── SERVICES ──────────────────────────────────────
     async function fetchServices() {
       try {
-        // Fix: Use 'currentUser' instead of 'authUser'
         const isStaff = currentUser.value && currentUser.value.role === 'staff';
         const res = await fetch(`${API_URL}/services?staff=${isStaff}`);
         if (res.ok) { 
           const data = await res.json(); 
           services.value = data.services || []; 
+          console.log('Services fetched:', services.value);
         }
       } catch (err) { console.error('Fetch services error:', err); }
     }
