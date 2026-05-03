@@ -30,14 +30,6 @@ def supabase_req(endpoint, method='GET', data=None):
         url_base = f"https://{url_base}"
     url_base = url_base.rstrip('/')
     
-    if "supabase.co" not in url_base:
-        print(f"CRITICAL: Invalid Supabase URL detected: '{url_base}'")
-        return None
-        
-    if not SUPABASE_KEY:
-        print("Error: SUPABASE_KEY is missing")
-        return None
-        
     try:
         url = f"{url_base}/rest/v1/{endpoint}"
         
@@ -48,14 +40,19 @@ def supabase_req(endpoint, method='GET', data=None):
             'Prefer': 'return=representation'
         }
         
+        # Use a session with retries for better stability
+        session = requests.Session()
+        adapter = requests.adapters.HTTPAdapter(max_retries=5)
+        session.mount('https://', adapter)
+        
         if method == 'GET':
-            res = requests.get(url, headers=headers, timeout=10)
+            res = session.get(url, headers=headers, timeout=15)
         elif method == 'POST':
-            res = requests.post(url, headers=headers, json=data, timeout=10)
+            res = session.post(url, headers=headers, json=data, timeout=15)
         elif method == 'PATCH':
-            res = requests.patch(url, headers=headers, json=data, timeout=10)
+            res = session.patch(url, headers=headers, json=data, timeout=15)
         elif method == 'DELETE':
-            res = requests.delete(url, headers=headers, timeout=10)
+            res = session.delete(url, headers=headers, timeout=15)
         else:
             return None
             
@@ -64,18 +61,16 @@ def supabase_req(endpoint, method='GET', data=None):
         
     except Exception as e:
         print(f"Supabase request error ({method} {endpoint}): {str(e)}")
-        # If it's a connection error, let's see the hostname it tried to use
-        if "Failed to resolve" in str(e):
-             import socket
-             try:
-                 host = url_base.split("//")[-1].split("/")[0]
-                 print(f"DNS Debug: Attempting to resolve host '{host}'")
-                 socket.gethostbyname(host)
-             except Exception as dns_e:
-                 print(f"DNS Debug: Manual resolution failed for '{host}': {dns_e}")
-        
-        if hasattr(e, 'response') and e.response is not None:
-            print(f"Response Body: {e.response.text}")
+        # If DNS fails, try to log the IP for debugging
+        try:
+            host = url_base.split("//")[-1].split("/")[0]
+            print(f"DNS Debug: Final attempt to resolve '{host}'...")
+            import socket
+            ip = socket.gethostbyname(host)
+            print(f"DNS Debug: Success! IP is {ip}")
+        except:
+            print("DNS Debug: ALL resolution methods failed.")
+            
         return None
 
 # --- ROUTES ---
