@@ -220,7 +220,6 @@ def handle_single_room(room_id):
     try:
         if request.method == 'PUT':
             data = request.get_json()
-            # If amenities is a list from frontend, join it for Supabase storage
             if 'amenities' in data and isinstance(data['amenities'], list):
                 data['amenities'] = ", ".join(data['amenities'])
             
@@ -231,8 +230,15 @@ def handle_single_room(room_id):
             supabase_req(f'rooms?id=eq.{room_id}', method='DELETE')
             return jsonify({"message": "Room deleted"}), 200
             
-        room = supabase_req(f'rooms?id=eq.{room_id}&select=*')
-        return jsonify({"room": room[0] if room else None}), 200
+        # Fix: ensure we return room object, not list
+        res = supabase_req(f'rooms?id=eq.{room_id}&select=*')
+        if res and isinstance(res, list) and len(res) > 0:
+            room = res[0]
+            raw_amenities = room.get('amenities', '')
+            if isinstance(raw_amenities, str):
+                room['amenities'] = [a.strip() for a in raw_amenities.split(',') if a.strip()]
+            return jsonify({"room": room}), 200
+        return jsonify({"error": "Room not found"}), 404
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
