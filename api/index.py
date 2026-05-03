@@ -1,7 +1,7 @@
 import os
 import sys
 import json
-import urllib.request
+import requests
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager, create_access_token
@@ -22,9 +22,7 @@ print("--- VERCEL STARTUP REPORT ---")
 print(f"SUPABASE_URL present: {bool(SUPABASE_URL)}")
 print(f"SUPABASE_KEY present: {bool(SUPABASE_KEY)}")
 if SUPABASE_URL: 
-    print(f"URL: {SUPABASE_URL}")
-else:
-    print("CRITICAL: SUPABASE_URL IS MISSING!")
+    print(f"URL: {SUPABASE_URL.strip()}")
 print("----------------------------")
 
 # --- HELPERS ---
@@ -34,7 +32,6 @@ def supabase_req(endpoint, method='GET', data=None):
         return None
         
     try:
-        # Ensure URL is clean
         base_url = SUPABASE_URL.strip().rstrip('/')
         url = f"{base_url}/rest/v1/{endpoint}"
         
@@ -44,18 +41,25 @@ def supabase_req(endpoint, method='GET', data=None):
             'Content-Type': 'application/json',
             'Prefer': 'return=representation'
         }
-        # ... rest of helper remains same
-        req_data = json.dumps(data).encode('utf-8') if data else None
-        req = urllib.request.Request(url, data=req_data, headers=headers, method=method)
-        with urllib.request.urlopen(req) as res:
-            res_body = res.read().decode('utf-8')
-            return json.loads(res_body) if res_body else []
-    except urllib.error.HTTPError as e:
-        error_body = e.read().decode('utf-8')
-        print(f"Supabase HTTP Error: {e.code} - {error_body}")
-        return None
+        
+        if method == 'GET':
+            res = requests.get(url, headers=headers)
+        elif method == 'POST':
+            res = requests.post(url, headers=headers, json=data)
+        elif method == 'PATCH':
+            res = requests.patch(url, headers=headers, json=data)
+        elif method == 'DELETE':
+            res = requests.delete(url, headers=headers)
+        else:
+            return None
+            
+        res.raise_for_status()
+        return res.json() if res.text else []
+        
     except Exception as e:
-        print(f"Supabase request error: {str(e)}")
+        print(f"Supabase request error ({method} {endpoint}): {str(e)}")
+        if hasattr(e, 'response') and e.response is not None:
+            print(f"Response: {e.response.text}")
         return None
 
 # --- ROUTES ---
