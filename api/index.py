@@ -185,12 +185,17 @@ def handle_services():
             result = supabase_req('services', method='POST', data=data)
             return jsonify({"message": "Service created", "service": result}), 201
             
-        # GET logic - return ALL for staff, only active for public
-        is_staff = request.args.get('staff') == 'true'
+        # GET logic
+        staff_param = request.args.get('staff', 'false').lower()
+        # Treat 'undefined' or empty as false for security
+        is_staff = (staff_param == 'true')
+        
         if is_staff:
+            # Staff sees everything
             services = supabase_req('services?select=*')
         else:
-            services = supabase_req('services?select=*&is_active=eq.true')
+            # Guests ONLY see active services
+            services = supabase_req('services?is_active=eq.true&select=*')
             
         return jsonify({"services": services or []}), 200
     except Exception as e:

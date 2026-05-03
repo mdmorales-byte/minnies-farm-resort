@@ -728,12 +728,13 @@ createApp({
     }
     async function fetchServices() {
       try {
-        const isStaff = currentUser.value && currentUser.value.role === 'staff';
+        // Fix: Ensure we send 'true' or 'false', never 'undefined'
+        const isStaff = (currentUser.value && currentUser.value.role === 'staff') ? 'true' : 'false';
         const res = await fetch(`${API_URL}/services?staff=${isStaff}`);
         if (res.ok) { 
           const data = await res.json(); 
           services.value = data.services || []; 
-          console.log('Services fetched:', services.value);
+          console.log('Services fetched (Staff: ' + isStaff + '):', services.value);
         }
       } catch (err) { console.error('Fetch services error:', err); }
     }
