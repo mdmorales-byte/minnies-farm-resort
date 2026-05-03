@@ -145,9 +145,18 @@ def google_login():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-@app.route('/api/rooms', methods=['GET'])
-def get_rooms():
+@app.route('/api/rooms', methods=['GET', 'POST'])
+def handle_rooms():
     try:
+        if request.method == 'POST':
+            data = request.get_json()
+            # Handle amenities if it's a list
+            if 'amenities' in data and isinstance(data['amenities'], list):
+                data['amenities'] = ", ".join(data['amenities'])
+            result = supabase_req('rooms', method='POST', data=data)
+            return jsonify({"message": "Room created successfully", "room": result}), 201
+            
+        # GET logic
         rooms = supabase_req('rooms?select=*')
         if rooms and isinstance(rooms, list):
             for room in rooms:
