@@ -45,7 +45,9 @@ def supabase_req(endpoint, method='GET', data=None):
             'apikey': SUPABASE_KEY.strip(),
             'Authorization': f'Bearer {SUPABASE_KEY.strip()}',
             'Content-Type': 'application/json',
-            'Prefer': 'return=representation'
+            'Prefer': 'return=representation',
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache'
         }
         
         # Use a session with retries for better stability
@@ -54,6 +56,10 @@ def supabase_req(endpoint, method='GET', data=None):
         session.mount('https://', adapter)
         
         if method == 'GET':
+            # Add cache-busting timestamp for GET requests to bypass Supabase CDN cache
+            import time
+            cache_buster = f"_t={int(time.time() * 1000)}"
+            url = f"{url}&{cache_buster}" if '?' in url else f"{url}?{cache_buster}"
             res = session.get(url, headers=headers, timeout=15)
         elif method == 'POST':
             res = session.post(url, headers=headers, json=data, timeout=15)
