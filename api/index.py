@@ -14,7 +14,7 @@ app.config["JWT_SECRET_KEY"] = os.getenv("JWT_SECRET_KEY", "dev-secret")
 jwt = JWTManager(app)
 
 # HARDCODED FOR DEBUGGING - BYPASSING VERCEL VARS
-SUPABASE_URL = "https://yrmmuaomglqoevooyxu.supabase.co"
+SUPABASE_URL = "https://yrmmuuaomglqoevooyxu.supabase.co"
 SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlybW11dWFvbWdscW9ldm9veXh1Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NzY5MzQzMSwiZXhwIjoyMDkzMjY5NDMxfQ.PS3W0IHsEpCfSw7o4tuXMhRrjTGH9EIFYhKWPMfN0y4"
 
 # STARTUP DEBUG REPORT
