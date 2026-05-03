@@ -286,11 +286,32 @@ def handle_single_room(room_id):
     try:
         if request.method == 'PUT':
             data = request.get_json()
-            if 'amenities' in data and isinstance(data['amenities'], list):
-                data['amenities'] = ", ".join(data['amenities'])
+            # Strict mapping to ensure everything saves
+            update_data = {
+                "name": data.get('name'),
+                "type": data.get('type'),
+                "room_number": data.get('room_number'),
+                "capacity": int(data.get('capacity', 2)),
+                "price_per_night": float(data.get('price_per_night', 0)),
+                "description": data.get('description'),
+                "sqm": int(data.get('sqm', 0)) if data.get('sqm') else None,
+                "room_status": data.get('room_status', 'available'),
+                "image_url": data.get('image_url'),
+                "image_url_2": data.get('image_url_2'),
+                "image_url_3: data.get('image_url_3'),
+                "image_url_4": data.get('image_url_4'),
+                "image_url_5": data.get('image_url_5')
+            }
             
-            result = supabase_req(f'rooms?id=eq.{room_id}', method='PATCH', data=data)
-            return jsonify({"message": "Room updated", "room": result}), 200
+            # Handle amenities if it's a list
+            if 'amenities' in data:
+                if isinstance(data['amenities'], list):
+                    update_data['amenities'] = ", ".join(data['amenities'])
+                else:
+                    update_data['amenities'] = data['amenities']
+            
+            result = supabase_req(f'rooms?id=eq.{room_id}', method='PATCH', data=update_data)
+            return jsonify({"message": "Room updated successfully", "room": result}), 200
         
         if request.method == 'DELETE':
             supabase_req(f'rooms?id=eq.{room_id}', method='DELETE')

@@ -677,7 +677,7 @@
         <div style="font-size:3rem;margin-bottom:1rem">{{ serviceModalData.icon }}</div>
         <h4>{{ serviceModalData.name }}</h4>
         <p style="color:var(--muted);margin:0.5rem 0">Requested by: {{ serviceModalData.guest }}</p>
-        <div style="font-size:1.5rem;font-weight:600;color:var(--teal);margin-top:1rem">₱{{ Number(serviceModalData.price).toLocaleString() }}</div>
+        <div style="font-size:1.5rem;font-weight:600;color:var(--teal);margin-top:1rem">₱{{ (serviceModalData.price || 0).toLocaleString() }}</div>
       </div>
       <div style="display:flex;gap:1rem;justify-content:center">
         <button class="btn btn-teal" @click="showServiceModal=false">Got it!</button>
