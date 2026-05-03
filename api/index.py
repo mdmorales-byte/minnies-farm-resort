@@ -13,16 +13,16 @@ CORS(app)
 app.config["JWT_SECRET_KEY"] = os.getenv("JWT_SECRET_KEY", "dev-secret")
 jwt = JWTManager(app)
 
-# Use a more robust way to get env vars
-SUPABASE_URL = os.environ.get('SUPABASE_URL') or os.getenv('SUPABASE_URL')
-SUPABASE_KEY = os.environ.get('SUPABASE_KEY') or os.getenv('SUPABASE_KEY')
+# Use a more robust way to get env vars and TRIM them
+SUPABASE_URL = (os.environ.get('SUPABASE_URL') or os.getenv('SUPABASE_URL') or "").strip()
+SUPABASE_KEY = (os.environ.get('SUPABASE_KEY') or os.getenv('SUPABASE_KEY') or "").strip()
 
 # STARTUP DEBUG REPORT
 print("--- VERCEL STARTUP REPORT ---")
 print(f"SUPABASE_URL present: {bool(SUPABASE_URL)}")
 print(f"SUPABASE_KEY present: {bool(SUPABASE_KEY)}")
 if SUPABASE_URL: 
-    print(f"URL: {SUPABASE_URL.strip()}")
+    print(f"URL: '{SUPABASE_URL}'") # Added quotes to see hidden spaces
 print("----------------------------")
 
 # --- HELPERS ---
