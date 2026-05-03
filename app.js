@@ -1,4 +1,4 @@
-const { createApp, ref, computed, onMounted } = Vue;
+const { createApp, ref, computed, onMounted, watch } = Vue;
 
 const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
   ? 'http://127.0.0.1:5000/api'
@@ -976,6 +976,12 @@ createApp({
         if (currentUser.value.role === 'staff') await fetchAllBookings();
         else await fetchUserBookings();
       }
+    });
+
+    // ── WATCH staffTab ──────────
+    watch(staffTab, (newTab) => {
+      if (newTab === 'rooms') { rooms.value = []; fetchRooms(); }
+      if (newTab === 'services') { services.value = []; fetchServices(); }
     });
 
     // ── RETURN (all refs/functions exposed to template) ────────────────────────
