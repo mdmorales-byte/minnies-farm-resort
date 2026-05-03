@@ -9,6 +9,8 @@ from passlib.hash import pbkdf2_sha256
 
 # --- CONFIG ---
 app = Flask(__name__)
+# Increase max content length to 10MB to handle image uploads better on Vercel
+app.config['MAX_CONTENT_LENGTH'] = 10 * 1024 * 1024
 CORS(app)
 app.config["JWT_SECRET_KEY"] = os.getenv("JWT_SECRET_KEY", "dev-secret")
 jwt = JWTManager(app)
@@ -147,19 +149,41 @@ def google_login():
 def get_rooms():
     try:
         rooms = supabase_req('rooms?select=*')
-        if rooms is None:
-            return jsonify({"error": "Failed to fetch rooms from database"}), 500
-        return jsonify({"rooms": rooms}), 200
+        if rooms and isinstance(rooms, list):
+            for room in rooms:
+                # FORCE AMENITIES TO BE A CLEAN LIST OF WORDS
+                raw = room.get('amenities', '')
+                if not raw:
+                    room['amenities'] = []
+                elif isinstance(raw, str):
+                    # Handle comma separated strings or JSON strings
+                    if raw.startswith('[') and raw.endswith(']'):
+                         try: room['amenities'] = json.loads(raw)
+                         except: room['amenities'] = [a.strip() for a in raw.strip('[]').split(',') if a.strip()]
+                    else:
+                         room['amenities'] = [a.strip() for a in raw.split(',') if a.strip()]
+                elif not isinstance(raw, list):
+                    room['amenities'] = []
+        return jsonify({"rooms": rooms or []}), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-@app.route('/api/services', methods=['GET'])
-def get_services():
+@app.route('/api/services', methods=['GET', 'POST'])
+def handle_services():
     try:
-        services = supabase_req('services?select=*&is_active=eq.true')
-        if services is None:
-            return jsonify({"error": "Failed to fetch services from database"}), 500
-        return jsonify({"services": services}), 200
+        if request.method == 'POST':
+            data = request.get_json()
+            result = supabase_req('services', method='POST', data=data)
+            return jsonify({"message": "Service created", "service": result}), 201
+            
+        # GET logic - return ALL for staff, only active for public
+        is_staff = request.args.get('staff') == 'true'
+        if is_staff:
+            services = supabase_req('services?select=*')
+        else:
+            services = supabase_req('services?select=*&is_active=eq.true')
+            
+        return jsonify({"services": services or []}), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 

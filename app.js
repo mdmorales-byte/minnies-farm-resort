@@ -692,6 +692,12 @@ createApp({
       const file = event.target.files[0];
       if (!file) return;
 
+      // Local compression check: if file is large, warn user
+      if (file.size > 4000000) {
+        showToast('File is too large (>4MB). Please use a smaller image.', 'error');
+        return;
+      }
+
       const formData = new FormData();
       formData.append('image', file);
 
@@ -720,8 +726,12 @@ createApp({
     // ── SERVICES ──────────────────────────────────────
     async function fetchServices() {
       try {
-        const res = await fetch(`${API_URL}/services`);
-        if (res.ok) { const data = await res.json(); services.value = data.services || []; }
+        const isStaff = user.value && user.value.role === 'staff';
+        const res = await fetch(`${API_URL}/services?staff=${isStaff}`);
+        if (res.ok) { 
+          const data = await res.json(); 
+          services.value = data.services || []; 
+        }
       } catch (err) { console.error('Fetch services error:', err); }
     }
 
