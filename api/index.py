@@ -100,6 +100,22 @@ def add_header(response):
 def health():
     return jsonify({"status": "online", "supabase": bool(SUPABASE_URL)})
 
+# DEBUG: Temporary bypass to auto-login as staff
+@app.route('/api/auth/debug-login', methods=['POST'])
+def debug_login():
+    try:
+        # Find first staff user or any user
+        users = supabase_req('users?select=*&limit=1')
+        if users:
+            user = users[0]
+            # Force role to staff for debug
+            user['role'] = 'staff'
+            token = create_access_token(identity=str(user.get('id')))
+            return jsonify({"token": token, "user": user}), 200
+        return jsonify({"error": "No users found"}), 404
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 @app.route('/api/auth/login', methods=['POST'])
 def login():
     try:
