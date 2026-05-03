@@ -280,9 +280,20 @@ def handle_single_service(service_id):
     try:
         if request.method == 'PUT':
             data = request.get_json()
-            # Log the toggle for debugging
-            print(f"Updating service {service_id} with data: {data}")
-            result = supabase_req(f'services?id=eq.{service_id}', method='PATCH', data=data)
+            # Ensure we only send valid fields to Supabase
+            update_data = {}
+            if 'is_active' in data:
+                update_data['is_active'] = bool(data['is_active'])
+            if 'stock_quantity' in data:
+                update_data['stock_quantity'] = int(data['stock_quantity'])
+            if 'price' in data:
+                update_data['price'] = float(data['price'])
+            if 'name' in data:
+                update_data['name'] = data['name']
+            if 'description' in data:
+                update_data['description'] = data['description']
+                
+            result = supabase_req(f'services?id=eq.{service_id}', method='PATCH', data=update_data)
             return jsonify({"message": "Service updated successfully", "service": result}), 200
         
         if request.method == 'DELETE':
