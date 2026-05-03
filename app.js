@@ -726,8 +726,6 @@ createApp({
         }
       };
     }
-
-    // ── SERVICES ──────────────────────────────────────
     async function fetchServices() {
       try {
         const isStaff = currentUser.value && currentUser.value.role === 'staff';
@@ -825,9 +823,7 @@ createApp({
 
     async function toggleService(service) {
       const newStatus = !service.is_active;
-      // Optimistically update the UI immediately
-      service.is_active = newStatus;
-
+      loading.value = true;
       try {
         const res = await fetch(`${API_URL}/services/${service.id}`, {
           method: 'PUT',
@@ -838,26 +834,17 @@ createApp({
           body: JSON.stringify({ is_active: newStatus })
         });
         
-        if (!res.ok) {
-          const data = await res.json();
-          // Revert if the server call failed
-          service.is_active = !newStatus;
-          showToast(data.error || 'Failed to toggle service.', 'error');
+        if (res.ok) {
+          showToast(`${service.name} is now ${newStatus ? 'Public' : 'Hidden'}!`, 'success');
+          await fetchServices(); // Force refresh everything
         } else {
-          showToast(`${service.name} is now ${newStatus ? 'Public' : 'Hidden'}.`, 'success');
-          // Update the specific service object in the array to ensure UI matches
-          const idx = services.value.findIndex(s => s.id === service.id);
-          if (idx !== -1) {
-            services.value[idx].is_active = newStatus;
-          }
-          // Important: refresh services list to ensure frontend is in sync with DB
-          await fetchServices();
+          const data = await res.json();
+          showToast(data.error || 'Failed to toggle service.', 'error');
         }
       } catch (err) {
-        // Revert on connection error
-        service.is_active = !newStatus;
         showToast('Connection error.', 'error');
       }
+      loading.value = false;
     }
 
     function openAddService() {

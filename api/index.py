@@ -283,7 +283,7 @@ def handle_single_service(service_id):
             # Ensure we only send valid fields to Supabase
             update_data = {}
             if 'is_active' in data:
-                update_data['is_active'] = bool(data['is_active'])
+                update_data['is_active'] = data['is_active'] # Keep original boolean
             if 'stock_quantity' in data:
                 update_data['stock_quantity'] = int(data['stock_quantity'])
             if 'price' in data:
@@ -293,8 +293,12 @@ def handle_single_service(service_id):
             if 'description' in data:
                 update_data['description'] = data['description']
                 
-            result = supabase_req(f'services?id=eq.{service_id}', method='PATCH', data=update_data)
-            return jsonify({"message": "Service updated successfully", "service": result}), 200
+            # Perform the update
+            supabase_req(f'services?id=eq.{service_id}', method='PATCH', data=update_data)
+            
+            # Immediately fetch the updated service to return it
+            updated = supabase_req(f'services?id=eq.{service_id}&select=*')
+            return jsonify({"message": "Service updated successfully", "service": updated[0] if updated else None}), 200
         
         if request.method == 'DELETE':
             supabase_req(f'services?id=eq.{service_id}', method='DELETE')
