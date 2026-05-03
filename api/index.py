@@ -163,6 +163,49 @@ def get_services():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+@app.route('/api/services/avails', methods=['GET'])
+def get_service_avails():
+    try:
+        avails = supabase_req('service_availability?select=*')
+        return jsonify({"service_avails": avails or []}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/api/bookings', methods=['GET', 'POST'])
+def handle_bookings():
+    try:
+        if request.method == 'POST':
+            data = request.get_json()
+            result = supabase_req('bookings', method='POST', data=data)
+            return jsonify({"message": "Booking created", "booking": result}), 201
+        
+        # GET logic
+        user_id = request.args.get('user_id')
+        endpoint = 'bookings?select=*'
+        if user_id:
+            endpoint += f'&user_id=eq.{user_id}'
+        bookings = supabase_req(endpoint)
+        return jsonify({"bookings": bookings or []}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/api/reviews', methods=['GET', 'POST'])
+def handle_reviews():
+    try:
+        if request.method == 'POST':
+            data = request.get_json()
+            result = supabase_req('reviews', method='POST', data=data)
+            return jsonify({"message": "Review added", "review": result}), 201
+            
+        room_id = request.args.get('room_id')
+        endpoint = 'reviews?select=*'
+        if room_id:
+            endpoint += f'&room_id=eq.{room_id}'
+        reviews = supabase_req(endpoint)
+        return jsonify({"reviews": reviews or []}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 # Vercel entry point
 handler = app
 
