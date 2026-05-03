@@ -82,6 +82,14 @@ def supabase_req(endpoint, method='GET', data=None):
         return None
 
 # --- ROUTES ---
+@app.after_request
+def add_header(response):
+    # FORCE NO CACHE - ensures staff updates reflect immediately
+    response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate, public, max-age=0"
+    response.headers["Pragma"] = "no-cache"
+    response.headers["Expires"] = "0"
+    return response
+
 @app.route('/api/health')
 def health():
     return jsonify({"status": "online", "supabase": bool(SUPABASE_URL)})

@@ -458,7 +458,8 @@ createApp({
     // ── ROOMS ──────────────────────────────────────────────────────────────────
     async function fetchRooms() {
       try {
-        let url = `${API_URL}/rooms`;
+        // Add timestamp to bypass cache
+        let url = `${API_URL}/rooms?t=${Date.now()}`;
         const params = new URLSearchParams();
         if (filters.value.type) params.append('type', filters.value.type);
         if (filters.value.maxPrice) params.append('max_price', filters.value.maxPrice);
@@ -728,9 +729,9 @@ createApp({
     }
     async function fetchServices() {
       try {
-        // Fix: Ensure we send 'true' or 'false', never 'undefined'
         const isStaff = (currentUser.value && currentUser.value.role === 'staff') ? 'true' : 'false';
-        const res = await fetch(`${API_URL}/services?staff=${isStaff}`);
+        // Add timestamp to bypass cache
+        const res = await fetch(`${API_URL}/services?staff=${isStaff}&t=${Date.now()}`);
         if (res.ok) { 
           const data = await res.json(); 
           services.value = data.services || []; 
