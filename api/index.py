@@ -323,6 +323,25 @@ def handle_single_service(service_id):
         print(f"Service update error: {e}")
         return jsonify({"error": str(e)}), 500
 
+@app.route('/api/services/<int:service_id>/avail', methods=['POST'])
+def avail_service(service_id):
+    try:
+        # Create a new entry in service_availability table
+        data = request.get_json() or {}
+        user_id = 1 # Placeholder or get from JWT
+        
+        insert_data = {
+            "service_id": service_id,
+            "user_id": user_id,
+            "status": "pending",
+            "notes": data.get('notes', '')
+        }
+        
+        result = supabase_req('service_availability', method='POST', data=insert_data)
+        return jsonify({"message": "Service request submitted!", "result": result}), 201
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 @app.route('/api/rooms/upload-image', methods=['POST'])
 def upload_image():
     try:
