@@ -13,27 +13,33 @@ CORS(app)
 app.config["JWT_SECRET_KEY"] = os.getenv("JWT_SECRET_KEY", "dev-secret")
 jwt = JWTManager(app)
 
-# Use a more robust way to get env vars and TRIM them
-SUPABASE_URL = (os.environ.get('SUPABASE_URL') or os.getenv('SUPABASE_URL') or "").strip()
-SUPABASE_KEY = (os.environ.get('SUPABASE_KEY') or os.getenv('SUPABASE_KEY') or "").strip()
+# Use a more robust way to get env vars and TRIM them aggressively
+def get_clean_env(key):
+    val = os.environ.get(key) or os.getenv(key) or ""
+    # Remove all whitespace, newlines, and quotes that might have been pasted by accident
+    return val.strip().replace("\n", "").replace("\r", "").replace(" ", "").replace("'", "").replace('"', "")
+
+SUPABASE_URL = get_clean_env('SUPABASE_URL')
+SUPABASE_KEY = get_clean_env('SUPABASE_KEY')
 
 # STARTUP DEBUG REPORT
 print("--- VERCEL STARTUP REPORT ---")
-print(f"SUPABASE_URL present: {bool(SUPABASE_URL)}")
-print(f"SUPABASE_KEY present: {bool(SUPABASE_KEY)}")
+print(f"SUPABASE_URL length: {len(SUPABASE_URL)}")
+print(f"SUPABASE_KEY length: {len(SUPABASE_KEY)}")
 if SUPABASE_URL: 
-    print(f"URL: '{SUPABASE_URL}'") # Added quotes to see hidden spaces
+    print(f"URL: '{SUPABASE_URL}'")
 print("----------------------------")
 
 # --- HELPERS ---
 def supabase_req(endpoint, method='GET', data=None):
-    if not SUPABASE_URL or not SUPABASE_KEY:
-        print("Error: Supabase credentials missing during request")
+    # Re-clean just in case
+    url_base = SUPABASE_URL.strip().rstrip('/')
+    if not url_base or not SUPABASE_KEY:
+        print("Error: Supabase credentials missing")
         return None
         
     try:
-        base_url = SUPABASE_URL.strip().rstrip('/')
-        url = f"{base_url}/rest/v1/{endpoint}"
+        url = f"{url_base}/rest/v1/{endpoint}"
         
         headers = {
             'apikey': SUPABASE_KEY.strip(),
