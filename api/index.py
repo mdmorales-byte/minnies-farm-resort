@@ -220,6 +220,10 @@ def handle_single_room(room_id):
     try:
         if request.method == 'PUT':
             data = request.get_json()
+            # If amenities is a list from frontend, join it for Supabase storage
+            if 'amenities' in data and isinstance(data['amenities'], list):
+                data['amenities'] = ", ".join(data['amenities'])
+            
             result = supabase_req(f'rooms?id=eq.{room_id}', method='PATCH', data=data)
             return jsonify({"message": "Room updated", "room": result}), 200
         
@@ -232,20 +236,24 @@ def handle_single_room(room_id):
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-@app.route('/api/services/<int:service_id>', methods=['PUT', 'DELETE'])
+@app.route('/api/services/<int:service_id>', methods=['GET', 'PUT', 'DELETE'])
 def handle_single_service(service_id):
     try:
         if request.method == 'PUT':
             data = request.get_json()
+            # Log the toggle for debugging
+            print(f"Updating service {service_id} with data: {data}")
             result = supabase_req(f'services?id=eq.{service_id}', method='PATCH', data=data)
-            return jsonify({"message": "Service updated", "service": result}), 200
+            return jsonify({"message": "Service updated successfully", "service": result}), 200
         
         if request.method == 'DELETE':
             supabase_req(f'services?id=eq.{service_id}', method='DELETE')
-            return jsonify({"message": "Service deleted"}), 200
+            return jsonify({"message": "Service deleted successfully"}), 200
             
-        return jsonify({"error": "Method not allowed"}), 405
+        service = supabase_req(f'services?id=eq.{service_id}&select=*')
+        return jsonify({"service": service[0] if service else None}), 200
     except Exception as e:
+        print(f"Service update error: {e}")
         return jsonify({"error": str(e)}), 500
 
 @app.route('/api/rooms/upload-image', methods=['POST'])
