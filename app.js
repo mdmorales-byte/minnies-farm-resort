@@ -488,19 +488,21 @@ createApp({
       try {
         // Clear existing data first to force UI update
         rooms.value = [];
-        // Add timestamp to bypass cache
-        let url = `${API_URL}/rooms?t=${Date.now()}`;
+        // Force Vue to re-render by waiting a tick
+        await new Promise(resolve => setTimeout(resolve, 50));
+        // Build URL with cache-busting timestamp
         const params = new URLSearchParams();
+        params.append('_t', Date.now()); // Cache buster
         if (filters.value.type) params.append('type', filters.value.type);
         if (filters.value.maxPrice) params.append('max_price', filters.value.maxPrice);
         if (filters.value.capacity) params.append('capacity', filters.value.capacity);
-        if (params.toString()) url += '?' + params;
+        const url = `${API_URL}/rooms?${params.toString()}`;
         const res = await fetch(url, {
           headers: { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' }
         });
         if (res.ok) {
           const data = await res.json();
-          rooms.value = data.rooms || [];
+          rooms.value = [...(data.rooms || [])]; // Force new array reference
           console.log('Rooms fetched:', rooms.value.length, 'rooms');
           rooms.value.forEach(r => {
             if (!r.emoji) {
@@ -794,14 +796,21 @@ createApp({
         const isStaff = (currentUser.value && currentUser.value.role === 'staff') ? 'true' : 'false';
         // Clear existing data first to force UI update
         services.value = [];
-        // Add timestamp to bypass cache
-        const res = await fetch(`${API_URL}/services?staff=${isStaff}&t=${Date.now()}`, {
+        // Force Vue to re-render by waiting a tick
+        await new Promise(resolve => setTimeout(resolve, 50));
+        // Build URL with cache-busting
+        const params = new URLSearchParams();
+        params.append('staff', isStaff);
+        params.append('_t', Date.now()); // Cache buster
+        const url = `${API_URL}/services?${params.toString()}`;
+        const res = await fetch(url, {
           headers: { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' }
         });
         if (res.ok) { 
           const data = await res.json(); 
-          services.value = data.services || []; 
+          services.value = [...(data.services || [])]; // Force new array reference
           console.log('Services fetched (Staff: ' + isStaff + '):', services.value.length, 'services');
+          console.log('Active services:', services.value.filter(s => s.is_active).length);
         }
       } catch (err) { console.error('Fetch services error:', err); }
     }
