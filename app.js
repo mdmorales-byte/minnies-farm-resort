@@ -726,7 +726,8 @@ createApp({
     // ── SERVICES ──────────────────────────────────────
     async function fetchServices() {
       try {
-        const isStaff = user.value && user.value.role === 'staff';
+        // Fix: Use the reactive user value correctly
+        const isStaff = authUser.value && authUser.value.role === 'staff';
         const res = await fetch(`${API_URL}/services?staff=${isStaff}`);
         if (res.ok) { 
           const data = await res.json(); 
