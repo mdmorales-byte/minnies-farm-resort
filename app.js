@@ -255,12 +255,12 @@ createApp({
       page.value = p;
       mobileMenuOpen.value = false; // Close mobile menu on navigation
       authMsg.value = '';
-      if (p === 'rooms') fetchRooms();
+      if (p === 'rooms') { rooms.value = []; setTimeout(fetchRooms, 50); }
       if (p === 'dashboard') {
         if (currentUser.value?.role === 'staff') { fetchAllBookings(); fetchServiceAvails(); }
         else { fetchUserBookings(); fetchServiceAvails(); }
       }
-      if (p === 'services') fetchServices();
+      if (p === 'services') { services.value = []; setTimeout(fetchServices, 50); }
     }
 
     // ── AUTH ───────────────────────────────────────────────────────────────────
@@ -458,6 +458,8 @@ createApp({
     // ── ROOMS ──────────────────────────────────────────────────────────────────
     async function fetchRooms() {
       try {
+        // Clear existing data first to force UI update
+        rooms.value = [];
         // Add timestamp to bypass cache
         let url = `${API_URL}/rooms?t=${Date.now()}`;
         const params = new URLSearchParams();
@@ -465,10 +467,13 @@ createApp({
         if (filters.value.maxPrice) params.append('max_price', filters.value.maxPrice);
         if (filters.value.capacity) params.append('capacity', filters.value.capacity);
         if (params.toString()) url += '?' + params;
-        const res = await fetch(url);
+        const res = await fetch(url, {
+          headers: { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' }
+        });
         if (res.ok) {
           const data = await res.json();
           rooms.value = data.rooms || [];
+          console.log('Rooms fetched:', rooms.value.length, 'rooms');
           rooms.value.forEach(r => {
             if (!r.emoji) {
               const emojis = { 'Standard': '👤', 'Themed': '🎈', 'Deluxe': '👥', 'Suite': '🏠' };
@@ -757,12 +762,16 @@ createApp({
     async function fetchServices() {
       try {
         const isStaff = (currentUser.value && currentUser.value.role === 'staff') ? 'true' : 'false';
+        // Clear existing data first to force UI update
+        services.value = [];
         // Add timestamp to bypass cache
-        const res = await fetch(`${API_URL}/services?staff=${isStaff}&t=${Date.now()}`);
+        const res = await fetch(`${API_URL}/services?staff=${isStaff}&t=${Date.now()}`, {
+          headers: { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' }
+        });
         if (res.ok) { 
           const data = await res.json(); 
           services.value = data.services || []; 
-          console.log('Services fetched (Staff: ' + isStaff + '):', services.value);
+          console.log('Services fetched (Staff: ' + isStaff + '):', services.value.length, 'services');
         }
       } catch (err) { console.error('Fetch services error:', err); }
     }
