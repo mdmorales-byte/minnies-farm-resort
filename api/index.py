@@ -319,7 +319,9 @@ def handle_single_room(room_id):
     try:
         if request.method == 'PUT':
             data = request.get_json()
+            print(f"Room PUT data received: {data}")
             # Strict mapping to ensure everything saves
+            room_status = data.get('room_status', 'available')
             update_data = {
                 "name": data.get('name'),
                 "type": data.get('type'),
@@ -328,13 +330,15 @@ def handle_single_room(room_id):
                 "price_per_night": float(data.get('price_per_night', 0)),
                 "description": data.get('description'),
                 "sqm": int(data.get('sqm', 0)) if data.get('sqm') else None,
-                "room_status": data.get('room_status', 'available'),
+                "room_status": room_status,
+                "is_available": room_status == 'available',  # Sync is_available with room_status
                 "image_url": data.get('image_url'),
                 "image_url_2": data.get('image_url_2'),
                 "image_url_3": data.get('image_url_3'),
                 "image_url_4": data.get('image_url_4'),
                 "image_url_5": data.get('image_url_5')
             }
+            print(f"Room update_data being sent to Supabase: {update_data}")
             
             # Handle amenities if it's a list
             if 'amenities' in data:
