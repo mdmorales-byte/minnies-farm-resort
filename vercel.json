@@ -7,7 +7,12 @@
     },
     {
       "source": "/(.*)",
-      "destination": "/$1"
+      "destination": "/index.html"
     }
-  ]
+  ],
+  "functions": {
+    "api/index.py": {
+      "runtime": "vercel-python@0.0.6"
+    }
+  }
 }

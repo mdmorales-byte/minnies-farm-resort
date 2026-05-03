@@ -298,7 +298,7 @@ def handle_single_room(room_id):
                 "room_status": data.get('room_status', 'available'),
                 "image_url": data.get('image_url'),
                 "image_url_2": data.get('image_url_2'),
-                "image_url_3: data.get('image_url_3'),
+                "image_url_3": data.get('image_url_3'),
                 "image_url_4": data.get('image_url_4'),
                 "image_url_5": data.get('image_url_5')
             }
