@@ -336,7 +336,11 @@ def handle_single_room(room_id):
                     update_data['amenities'] = data['amenities']
             
             result = supabase_req(f'rooms?id=eq.{room_id}', method='PATCH', data=update_data)
-            return jsonify({"message": "Room updated successfully", "room": result}), 200
+            print(f"Room PATCH result: {result}")
+            # Fetch fresh data after update (Supabase PATCH doesn't return updated row)
+            updated = supabase_req(f'rooms?id=eq.{room_id}&select=*')
+            print(f"Room updated fetch: {updated}")
+            return jsonify({"message": "Room updated successfully", "room": updated[0] if updated else result}), 200
         
         if request.method == 'DELETE':
             supabase_req(f'rooms?id=eq.{room_id}', method='DELETE')

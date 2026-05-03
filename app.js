@@ -720,11 +720,13 @@ createApp({
           })
         });
         if (res.ok) { 
+          const data = await res.json();
+          console.log('Room saved response:', data);
           await fetchRooms(); 
           showRoomModal.value = false;
           showToast(editingRoom.value ? 'Room updated! 🏠' : 'Room created! 🏠', 'success');
         }
-        else { const data = await res.json(); alert(data.error || 'Error saving room'); }
+        else { const data = await res.json(); console.error('Room save error:', data); alert(data.error || 'Error saving room'); }
       } catch (err) { alert('Connection error: ' + err.message); }
       loading.value = false;
     }
@@ -937,11 +939,14 @@ createApp({
           body: JSON.stringify(serviceForm.value)
         });
         if (res.ok) { 
+          const data = await res.json();
+          console.log('Service saved response:', data);
           await fetchServices(); 
           showServiceAdminModal.value = false;
           showToast(editingService.value ? 'Service updated! ✅' : 'Service created! ✅', 'success');
         } else { 
           const data = await res.json(); 
+          console.error('Service save error:', data);
           showToast(data.error || 'Error saving service', 'error'); 
         }
       } catch (err) { showToast('Connection error.', 'error'); }
