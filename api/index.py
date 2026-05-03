@@ -13,21 +13,13 @@ CORS(app)
 app.config["JWT_SECRET_KEY"] = os.getenv("JWT_SECRET_KEY", "dev-secret")
 jwt = JWTManager(app)
 
-# Use a more robust way to get env vars and TRIM them aggressively
-def get_clean_env(key):
-    val = os.environ.get(key) or os.getenv(key) or ""
-    # Remove all whitespace, newlines, and quotes that might have been pasted by accident
-    return val.strip().replace("\n", "").replace("\r", "").replace(" ", "").replace("'", "").replace('"', "")
-
-SUPABASE_URL = get_clean_env('SUPABASE_URL')
-SUPABASE_KEY = get_clean_env('SUPABASE_KEY')
+# HARDCODED FOR DEBUGGING - BYPASSING VERCEL VARS
+SUPABASE_URL = "https://yrmmuaomglqoevooyxu.supabase.co"
+SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlybW11dWFvbWdscW9ldm9veXh1Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NzY5MzQzMSwiZXhwIjoyMDkzMjY5NDMxfQ.PS3W0IHsEpCfSw7o4tuXMhRrjTGH9EIFYhKWPMfN0y4"
 
 # STARTUP DEBUG REPORT
-print("--- VERCEL STARTUP REPORT ---")
-print(f"SUPABASE_URL length: {len(SUPABASE_URL)}")
-print(f"SUPABASE_KEY length: {len(SUPABASE_KEY)}")
-if SUPABASE_URL: 
-    print(f"URL: '{SUPABASE_URL}'")
+print("--- VERCEL STARTUP REPORT (HARDCODED) ---")
+print(f"URL: '{SUPABASE_URL}'")
 print("----------------------------")
 
 # --- HELPERS ---
