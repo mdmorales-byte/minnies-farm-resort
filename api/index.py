@@ -318,16 +318,22 @@ def get_me():
 def handle_single_room(room_id):
     try:
         if request.method == 'PUT':
+            import sys
             data = request.get_json()
-            print(f"Room PUT data received: {data}")
+            print(f"Room PUT data received: {data}", flush=True)
+            sys.stdout.flush()
+            
+            if not data:
+                return jsonify({"error": "No data received"}), 400
+                
             # Strict mapping to ensure everything saves
             room_status = data.get('room_status', 'available')
             update_data = {
                 "name": data.get('name'),
                 "type": data.get('type'),
                 "room_number": data.get('room_number'),
-                "capacity": int(data.get('capacity', 2)),
-                "price_per_night": float(data.get('price_per_night', 0)),
+                "capacity": int(data.get('capacity', 2)) if data.get('capacity') else 2,
+                "price_per_night": float(data.get('price_per_night', 0)) if data.get('price_per_night') else 0,
                 "description": data.get('description'),
                 "sqm": int(data.get('sqm', 0)) if data.get('sqm') else None,
                 "room_status": room_status,
@@ -338,7 +344,8 @@ def handle_single_room(room_id):
                 "image_url_4": data.get('image_url_4'),
                 "image_url_5": data.get('image_url_5')
             }
-            print(f"Room update_data being sent to Supabase: {update_data}")
+            print(f"Room update_data: {update_data}", flush=True)
+            sys.stdout.flush()
             
             # Handle amenities if it's a list
             if 'amenities' in data:
@@ -348,10 +355,12 @@ def handle_single_room(room_id):
                     update_data['amenities'] = data['amenities']
             
             result = supabase_req(f'rooms?id=eq.{room_id}', method='PATCH', data=update_data)
-            print(f"Room PATCH result: {result}")
+            print(f"Room PATCH result: {result}", flush=True)
+            sys.stdout.flush()
             # Fetch fresh data after update (Supabase PATCH doesn't return updated row)
             updated = supabase_req(f'rooms?id=eq.{room_id}&select=*')
-            print(f"Room updated fetch: {updated}")
+            print(f"Room updated fetch: {updated}", flush=True)
+            sys.stdout.flush()
             return jsonify({"message": "Room updated successfully", "room": updated[0] if updated else result}), 200
         
         if request.method == 'DELETE':
