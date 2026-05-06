@@ -757,6 +757,15 @@ createApp({
       document.getElementById('file-input-' + index).click();
     }
 
+    function removeImage(index) {
+      const fieldName = 'image_url' + (index === 1 ? '' : '_' + index);
+      roomForm.value[fieldName] = null;
+      // Also clear the file input so it can be re-selected
+      const input = document.getElementById('file-input-' + index);
+      if (input) input.value = '';
+      showToast(`Image ${index} removed. Save to apply.`, 'info');
+    }
+
     async function handleFileUpload(event, index) {
       const file = event.target.files[0];
       if (!file) return;
@@ -1055,6 +1064,7 @@ createApp({
       pendingDeleteService,
       serviceForm,
       triggerUpload,
+      removeImage,
       handleFileUpload,
       staffTab,
       navigate,

@@ -148,6 +148,8 @@
               'badge-available': room.room_status === 'available',
               'badge-unavailable': room.room_status === 'fully_booked',
               'badge-maintenance': room.room_status === 'under_maintenance'
+            }" :style="{
+              'badge-maintenance': { background: '#8e735b', color: 'white' }
             }">
               {{ 
                 room.room_status === 'available' ? 'Available' : 
@@ -622,17 +624,21 @@
       
       <!-- IMAGE UPLOADER -->
       <div class="form-group">
-        <label>Room Images</label>
-        <div style="display:grid;grid-template-columns:repeat(auto-fill, minmax(80px, 1fr));gap:0.75rem;margin-top:0.5rem">
-          <div v-for="i in [1,2,3,4,5]" :key="i" class="image-upload-box" @click="triggerUpload(i)">
-            <div v-if="roomForm['image_url' + (i===1?'':'_'+i)]" class="preview-container">
-              <img :src="roomForm['image_url' + (i===1?'':'_'+i)]" class="upload-preview" />
-              <div class="upload-overlay"><span>Change</span></div>
-            </div>
-            <div v-else class="upload-placeholder">
-              <span style="font-size:1.5rem">+</span>
-              <span style="font-size:0.6rem">Image {{ i }}</span>
-            </div>
+        <label>Room Images <span style="font-weight:400;color:var(--muted);font-size:0.8rem">(Up to 5)</span></label>
+        <div class="image-manage-grid">
+          <div v-for="i in [1,2,3,4,5]" :key="i" class="image-manage-item">
+            <!-- If image exists -->
+            <template v-if="roomForm['image_url' + (i===1?'':'_'+i)]">
+              <img :src="roomForm['image_url' + (i===1?'':'_'+i)]" />
+              <div class="image-manage-overlay">
+                <button class="btn-remove-img" @click.stop="removeImage(i)">✕ Remove</button>
+              </div>
+            </template>
+            <!-- If no image -->
+            <label v-else :for="'file-input-' + i" class="upload-label">
+              <i>📸</i>
+              <span>Image {{ i }}</span>
+            </label>
             <input type="file" :id="'file-input-' + i" style="display:none" accept="image/*" @change="handleFileUpload($event, i)" />
           </div>
         </div>
