@@ -144,7 +144,16 @@
           <div class="room-card-image">
             <img v-if="room.image_url" :src="room.image_url" style="width:100%;height:100%;object-fit:cover" />
             <span v-else style="font-size:3.5rem">{{ room.emoji }}</span>
-            <span class="availability-badge" :class="room.is_available ? 'badge-available' : 'badge-unavailable'">{{ room.is_available ? 'Available' : 'Booked' }}</span>
+            <span class="availability-badge" :class="{
+              'badge-available': room.room_status === 'available',
+              'badge-unavailable': room.room_status === 'fully_booked',
+              'badge-maintenance': room.room_status === 'under_maintenance'
+            }">
+              {{ 
+                room.room_status === 'available' ? 'Available' : 
+                room.room_status === 'under_maintenance' ? 'Maintenance' : 'Booked' 
+              }}
+            </span>
           </div>
           <div class="room-body">
             <div class="room-type-tag">{{ room.type }}</div>
@@ -153,7 +162,9 @@
             <div class="room-amenities"><span v-for="a in room.amenities.slice(0,3)" :key="a" class="amenity-chip">{{ a }}</span></div>
             <div class="room-footer">
               <div class="room-price"><span class="amount">₱{{ (room.price_per_night || 0).toLocaleString() }}</span><span class="per"> / night</span></div>
-              <button class="btn btn-teal btn-sm" @click="viewRoom(room)">View Details</button>
+              <button class="btn btn-teal btn-sm" @click="viewRoom(room)" :disabled="room.room_status === 'under_maintenance'">
+                {{ room.room_status === 'under_maintenance' ? 'Unavailable' : 'View Details' }}
+              </button>
             </div>
           </div>
         </div>
