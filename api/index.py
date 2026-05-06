@@ -337,8 +337,12 @@ def handle_single_room(room_id):
                 "description": data.get('description'),
                 "sqm": int(data.get('sqm', 0)) if data.get('sqm') else None,
                 "room_status": room_status,
-                "is_available": room_status == 'available'  # Sync is_available with room_status
-                # Note: image_url columns don't exist in database schema
+                "is_available": room_status == 'available',  # Sync is_available with room_status
+                "image_url": data.get('image_url'),
+                "image_url_2": data.get('image_url_2'),
+                "image_url_3": data.get('image_url_3'),
+                "image_url_4": data.get('image_url_4'),
+                "image_url_5": data.get('image_url_5')
             }
             print(f"Room update_data: {update_data}", flush=True)
             sys.stdout.flush()
