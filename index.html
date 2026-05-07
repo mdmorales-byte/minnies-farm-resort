@@ -439,6 +439,10 @@
           <div class="dashboard-tabs">
             <button class="dash-tab" :class="{active:dashTab==='upcoming'}" @click="dashTab='upcoming'">Upcoming ({{ upcomingBookings.length }})</button>
             <button class="dash-tab" :class="{active:dashTab==='past'}" @click="dashTab='past'">Past ({{ pastBookings.length }})</button>
+            <button class="btn btn-sm btn-outline-teal" style="margin-left: auto;" @click="fetchUserBookings" :disabled="loading">
+              <span v-if="loading">⏳</span>
+              <span v-else>🔄 Sync</span>
+            </button>
           </div>
           <div v-if="dashTab==='upcoming'">
             <div v-if="upcomingBookings.length===0" class="empty-state"><div class="icon">🏖️</div><h3>No upcoming bookings</h3><p>Start planning your perfect getaway</p><button class="btn btn-teal" style="margin-top:1rem" @click="navigate('rooms')">Browse Rooms</button></div>
@@ -484,7 +488,13 @@
   <!-- STAFF DASHBOARD -->
   <div v-if="page==='dashboard' && currentUser && currentUser.role==='staff'" class="page">
     <div class="container">
-      <div class="section-title">Staff Dashboard</div>
+      <div class="dashboard-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem;">
+        <div class="section-title" style="margin-bottom:0">Staff Dashboard</div>
+        <button class="btn btn-teal btn-sm" @click="fetchAllBookings" :disabled="loading">
+          <span v-if="loading">⏳ Loading...</span>
+          <span v-else>🔄 Refresh Data</span>
+        </button>
+      </div>
       <div class="section-sub">Manage rooms and reservations</div>
       <div class="stats-grid">
         <div class="stat-card"><div class="stat-value">{{ rooms.length }}</div><div class="stat-label">Total Rooms</div></div>

@@ -269,16 +269,17 @@ def generate_ref():
 def handle_bookings():
     try:
         if request.method == 'POST':
+            # ... existing POST logic ...
             data = request.get_json()
             room_id = data.get('room_id')
             user_id = data.get('user_id')
             
-            print(f"DEBUG: Booking request received. User: {user_id}, Room: {room_id}")
+            print(f"DEBUG: Booking request received. User: {user_id}, Room: {room_id}", flush=True)
             
             # Fetch room details for pricing
             room_res = supabase_req(f'rooms?id=eq.{room_id}&select=*')
             if not room_res:
-                print(f"DEBUG: Room {room_id} not found in database.")
+                print(f"DEBUG: Room {room_id} not found in database.", flush=True)
                 return jsonify({"error": "Room not found"}), 404
             
             room = room_res[0]
@@ -292,7 +293,7 @@ def handle_bookings():
                 nights = (co - ci).days
                 if nights <= 0: nights = 1
             except Exception as e:
-                print(f"DEBUG: Date parsing error: {e}")
+                print(f"DEBUG: Date parsing error: {e}", flush=True)
                 return jsonify({"error": "Invalid dates"}), 400
             
             # Final Price Calculation
@@ -322,7 +323,7 @@ def handle_bookings():
                 "reference_code": generate_ref()
             }
             
-            print(f"DEBUG: Sending to Supabase: {booking_data}")
+            print(f"DEBUG: Sending to Supabase: {booking_data}", flush=True)
             result = supabase_req('bookings', method='POST', data=booking_data)
             
             # If Supabase returns nothing but didn't error, the insert likely worked.
@@ -334,20 +335,26 @@ def handle_bookings():
         
         # GET logic
         is_staff = request.args.get('staff') == 'true'
-        user_id = request.args.get('user_id')
+        user_id_param = request.args.get('user_id')
+        
+        print(f"DEBUG: Fetching bookings. is_staff={is_staff}, user_id_param={user_id_param}", flush=True)
         
         if is_staff:
             # Staff can see all bookings
             bookings = supabase_req('bookings?select=*&order=created_at.desc')
-        elif user_id:
+        elif user_id_param:
             # Guest sees only their own
-            bookings = supabase_req(f'bookings?user_id=eq.{user_id}&select=*&order=created_at.desc')
+            # Ensure user_id is passed correctly to Supabase filter
+            bookings = supabase_req(f'bookings?user_id=eq.{user_id_param}&select=*&order=created_at.desc')
         else:
-            # Fallback if no user_id is provided (should not happen for guests)
+            # Fallback if no user_id is provided
+            print("DEBUG: No user_id or staff flag provided for bookings GET", flush=True)
             bookings = []
             
+        print(f"DEBUG: Returning {len(bookings) if bookings else 0} bookings", flush=True)
         return jsonify({"bookings": bookings or []}), 200
     except Exception as e:
+        print(f"DEBUG: Error in handle_bookings: {str(e)}", flush=True)
         return jsonify({"error": str(e)}), 500
 
 @app.route('/api/reviews', methods=['GET', 'POST'])

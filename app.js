@@ -566,15 +566,27 @@ createApp({
     async function fetchUserBookings() {
       if (!token.value || !currentUser.value) return;
       try {
-        const res = await fetch(`${API_URL}/bookings?user_id=${currentUser.value.id}`, { headers: { 'Authorization': `Bearer ${token.value}` } });
+        console.log('Fetching bookings for user:', currentUser.value.id);
+        const res = await fetch(`${API_URL}/bookings?user_id=${currentUser.value.id}&_t=${Date.now()}`, { 
+          headers: { 
+            'Authorization': `Bearer ${token.value}`,
+            'Cache-Control': 'no-cache',
+            'Pragma': 'no-cache'
+          } 
+        });
         if (res.ok) {
           const data = await res.json();
-          console.log('User Bookings Loaded:', data.bookings);
+          console.log('User Bookings Received:', data.bookings);
+          
+          if (!data.bookings || data.bookings.length === 0) {
+            console.warn('No bookings returned for user:', currentUser.value.id);
+          }
+
           allBookings.value = (data.bookings || []).map(b => {
             const room = rooms.value.find(r => r.id === b.room_id);
             return {
               ...b,
-              guestName: b.guestName || currentUser.value.name,
+              guestName: currentUser.value.name,
               emoji: room?.emoji || '🏠',
               room: room?.name || 'Room ' + b.room_id,
               checkIn: b.check_in_date,
@@ -583,16 +595,26 @@ createApp({
               total: b.total_price
             };
           });
+        } else {
+          const errorData = await res.json();
+          console.error('Fetch user bookings failed:', errorData);
         }
       } catch (err) { console.error('Fetch user bookings error:', err); }
     }
 
     async function fetchAllBookings() {
       try {
-        const res = await fetch(`${API_URL}/bookings?staff=true`, { headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` } });
+        console.log('Fetching all bookings (Staff)');
+        const res = await fetch(`${API_URL}/bookings?staff=true&_t=${Date.now()}`, { 
+          headers: { 
+            'Authorization': `Bearer ${token.value || localStorage.getItem('token')}`,
+            'Cache-Control': 'no-cache',
+            'Pragma': 'no-cache'
+          } 
+        });
         if (res.ok) {
           const data = await res.json();
-          console.log('All Bookings Loaded (Staff):', data.bookings);
+          console.log('All Bookings Received (Staff):', data.bookings);
           
           allBookings.value = (data.bookings || []).map(b => {
             const room = rooms.value.find(r => r.id === b.room_id);
@@ -606,6 +628,9 @@ createApp({
               total: b.total_price
             };
           });
+        } else {
+          const errorData = await res.json();
+          console.error('Fetch all bookings failed:', errorData);
         }
       } catch (e) { console.error('Fetch all bookings error:', e); }
     }
