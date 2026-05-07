@@ -307,8 +307,14 @@ def handle_bookings():
                 # Fallback: get from token if possible
                 try:
                     from flask_jwt_extended import get_jwt_identity
-                    user_id = int(get_jwt_identity())
+                    token_user_id = get_jwt_identity()
+                    if token_user_id:
+                        user_id = int(token_user_id)
                 except: pass
+
+            if not user_id:
+                print("DEBUG: CRITICAL ERROR - No user_id found for booking", flush=True)
+                return jsonify({"error": "User session expired or not found"}), 401
 
             # VERIFIED SCHEMA FROM SUPABASE SCREENSHOT:
             # check_in_date, check_out_date, total_price, status, guest_count
@@ -344,8 +350,10 @@ def handle_bookings():
             bookings = supabase_req('bookings?select=*&order=created_at.desc')
         elif user_id_param:
             # Guest sees only their own
-            # Ensure user_id is passed correctly to Supabase filter
-            bookings = supabase_req(f'bookings?user_id=eq.{user_id_param}&select=*&order=created_at.desc')
+            # Use fixed user_id filter format
+            endpoint = f'bookings?user_id=eq.{user_id_param}&select=*&order=created_at.desc'
+            print(f"DEBUG: Supabase request for user {user_id_param}: {endpoint}", flush=True)
+            bookings = supabase_req(endpoint)
         else:
             # Fallback if no user_id is provided
             print("DEBUG: No user_id or staff flag provided for bookings GET", flush=True)
