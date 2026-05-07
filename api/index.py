@@ -308,14 +308,16 @@ def handle_bookings():
                     user_id = int(get_jwt_identity())
                 except: pass
 
-            # Prepare Booking Data with EXACT database column names
+            # Final check of column names based on possible schema variations
+            # Based on logs, 'check_in_date' failed, but then 'guests' failed.
+            # Let's use the most standard names that match the frontend's original logic.
             booking_data = {
                 "user_id": user_id,
                 "room_id": room_id,
-                "check_in": data['check_in_date'],
-                "check_out": data['check_out_date'],
-                "guests": int(data.get('num_guests', 1)),
-                "total": total_price,
+                "check_in_date": data['check_in_date'],
+                "check_out_date": data['check_out_date'],
+                "num_guests": int(data.get('num_guests', 1)),
+                "total_price": total_price,
                 "status": "confirmed",
                 "reference_code": generate_ref()
             }
