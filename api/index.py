@@ -250,20 +250,57 @@ def get_service_avails():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+import random
+import string
+
+# --- HELPERS ---
+def generate_ref():
+    chars = string.ascii_uppercase + string.digits
+    return "MFR-" + "".join(random.choices(chars, k=6))
+
 @app.route('/api/bookings', methods=['GET', 'POST'])
 def handle_bookings():
     try:
         if request.method == 'POST':
             data = request.get_json()
-            # Calculate total price if missing
             room_id = data.get('room_id')
-            room = supabase_req(f'rooms?id=eq.{room_id}&select=*')
-            if room:
-                price = room[0].get('price_per_night', 0)
-                data['total_price'] = data.get('total_price', price)
             
-            result = supabase_req('bookings', method='POST', data=data)
-            return jsonify({"message": "Booking successful!", "booking": result[0] if result else {}}), 201
+            # Fetch room details for pricing
+            room_res = supabase_req(f'rooms?id=eq.{room_id}&select=*')
+            if not room_res:
+                return jsonify({"error": "Room not found"}), 404
+            
+            room = room_res[0]
+            price_per_night = float(room.get('price_per_night', 0))
+            
+            # Calculate nights
+            from datetime import date
+            ci = date.fromisoformat(data['check_in_date'])
+            co = date.fromisoformat(data['check_out_date'])
+            nights = (co - ci).days
+            if nights <= 0: nights = 1
+            
+            # Final Price Calculation
+            subtotal = price_per_night * nights
+            total_price = round(subtotal + (subtotal * 0.10), 2) # 10% resort fee
+            
+            # Prepare Booking Data
+            booking_data = {
+                "user_id": data.get('user_id'),
+                "room_id": room_id,
+                "check_in_date": data['check_in_date'],
+                "check_out_date": data['check_out_date'],
+                "num_guests": int(data.get('num_guests', 1)),
+                "total_price": total_price,
+                "status": "confirmed",
+                "reference_code": generate_ref()
+            }
+            
+            result = supabase_req('bookings', method='POST', data=booking_data)
+            return jsonify({
+                "message": "Booking successful!", 
+                "booking": result[0] if result else booking_data
+            }), 201
         
         # GET logic
         is_staff = request.args.get('staff') == 'true'
