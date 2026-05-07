@@ -285,8 +285,12 @@ def handle_bookings():
             total_price = round(subtotal + (subtotal * 0.10), 2) # 10% resort fee
             
             # Prepare Booking Data
+            user_id = data.get('user_id')
+            if isinstance(user_id, str) and user_id.isdigit():
+                user_id = int(user_id)
+
             booking_data = {
-                "user_id": data.get('user_id'),
+                "user_id": user_id,
                 "room_id": room_id,
                 "check_in_date": data['check_in_date'],
                 "check_out_date": data['check_out_date'],
@@ -297,9 +301,13 @@ def handle_bookings():
             }
             
             result = supabase_req('bookings', method='POST', data=booking_data)
+            # Ensure the returned object has all fields for the frontend
+            return_data = result[0] if result else booking_data
+            if 'user_id' not in return_data: return_data['user_id'] = user_id
+            
             return jsonify({
                 "message": "Booking successful!", 
-                "booking": result[0] if result else booking_data
+                "booking": return_data
             }), 201
         
         # GET logic

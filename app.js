@@ -567,18 +567,22 @@ createApp({
         const res = await fetch(`${API_URL}/bookings?user_id=${currentUser.value.id}`, { headers: { 'Authorization': `Bearer ${token.value}` } });
         if (res.ok) {
           const data = await res.json();
-          allBookings.value = (data.bookings || []).map(b => ({
-            ...b,
-            guestName: currentUser.value.name,
-            emoji: rooms.value.find(r => r.id === b.room_id)?.emoji || '🏠',
-            room: rooms.value.find(r => r.id === b.room_id)?.name || 'Room ' + b.room_id,
-            checkIn: b.check_in_date,
-            checkOut: b.check_out_date,
-            guests: b.num_guests,
-            total: b.total_price
-          }));
+          console.log('User Bookings Loaded:', data.bookings);
+          allBookings.value = (data.bookings || []).map(b => {
+            const room = rooms.value.find(r => r.id === b.room_id);
+            return {
+              ...b,
+              guestName: currentUser.value.name,
+              emoji: room?.emoji || '🏠',
+              room: room?.name || 'Room ' + b.room_id,
+              checkIn: b.check_in_date,
+              checkOut: b.check_out_date,
+              guests: b.num_guests,
+              total: b.total_price
+            };
+          });
         }
-      } catch (err) { console.error('Fetch bookings error:', err); }
+      } catch (err) { console.error('Fetch user bookings error:', err); }
     }
 
     async function fetchAllBookings() {
@@ -586,15 +590,14 @@ createApp({
         const res = await fetch(`${API_URL}/bookings?staff=true`, { headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` } });
         if (res.ok) {
           const data = await res.json();
-          // Fetch users and rooms for mapping
-          const usersRes = await fetch(`${API_URL}/health`); // Just to check if we can get all info
+          console.log('All Bookings Loaded (Staff):', data.bookings);
           
           allBookings.value = (data.bookings || []).map(b => {
             const room = rooms.value.find(r => r.id === b.room_id);
             return {
               ...b, 
               guestName: b.guest_name || 'Guest ' + b.user_id, 
-              room: room ? room.name : 'Room ' + b.room_id,
+              room: b.room_name || room?.name || 'Room ' + b.room_id,
               checkIn: b.check_in_date, 
               checkOut: b.check_out_date,
               guests: b.num_guests, 
@@ -602,7 +605,7 @@ createApp({
             };
           });
         }
-      } catch (e) { console.error(e); }
+      } catch (e) { console.error('Fetch all bookings error:', e); }
     }
 
     async function cancelBooking(b) {
