@@ -185,13 +185,15 @@ createApp({
       return Math.round(sub + sub * 0.1);
     });
 
-    const upcomingBookings = computed(() =>
-      allBookings.value.filter(b => b.guestName === currentUser.value?.name && (b.status === 'confirmed' || b.status === 'pending'))
-    );
+    const upcomingBookings = computed(() => {
+      const today = new Date().toISOString().split('T')[0];
+      return allBookings.value.filter(b => b.check_in_date >= today && b.status !== 'cancelled');
+    });
 
-    const pastBookings = computed(() =>
-      allBookings.value.filter(b => b.guestName === currentUser.value?.name && (b.status === 'completed' || b.status === 'cancelled'))
-    );
+    const pastBookings = computed(() => {
+      const today = new Date().toISOString().split('T')[0];
+      return allBookings.value.filter(b => b.check_in_date < today || b.status === 'cancelled' || b.status === 'completed');
+    });
 
     // Finds a completed booking for the selected room that the current user
     // owns and hasn't reviewed yet — this unlocks the "Leave a Review" form.
