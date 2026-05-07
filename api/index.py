@@ -264,10 +264,14 @@ def handle_bookings():
         if request.method == 'POST':
             data = request.get_json()
             room_id = data.get('room_id')
+            user_id = data.get('user_id')
+            
+            print(f"DEBUG: Booking request received. User: {user_id}, Room: {room_id}")
             
             # Fetch room details for pricing
             room_res = supabase_req(f'rooms?id=eq.{room_id}&select=*')
             if not room_res:
+                print(f"DEBUG: Room {room_id} not found in database.")
                 return jsonify({"error": "Room not found"}), 404
             
             room = room_res[0]
@@ -275,19 +279,28 @@ def handle_bookings():
             
             # Calculate nights
             from datetime import date
-            ci = date.fromisoformat(data['check_in_date'])
-            co = date.fromisoformat(data['check_out_date'])
-            nights = (co - ci).days
-            if nights <= 0: nights = 1
+            try:
+                ci = date.fromisoformat(data['check_in_date'])
+                co = date.fromisoformat(data['check_out_date'])
+                nights = (co - ci).days
+                if nights <= 0: nights = 1
+            except Exception as e:
+                print(f"DEBUG: Date parsing error: {e}")
+                return jsonify({"error": "Invalid dates"}), 400
             
             # Final Price Calculation
             subtotal = price_per_night * nights
-            total_price = round(subtotal + (subtotal * 0.10), 2) # 10% resort fee
+            total_price = round(subtotal + (subtotal * 0.10), 2)
             
-            # Prepare Booking Data
-            user_id = data.get('user_id')
+            # Force user_id to int
             if isinstance(user_id, str) and user_id.isdigit():
                 user_id = int(user_id)
+            elif not user_id:
+                # Fallback: get from token if possible
+                try:
+                    from flask_jwt_extended import get_jwt_identity
+                    user_id = int(get_jwt_identity())
+                except: pass
 
             booking_data = {
                 "user_id": user_id,
@@ -300,11 +313,16 @@ def handle_bookings():
                 "reference_code": generate_ref()
             }
             
+            print(f"DEBUG: Sending to Supabase: {booking_data}")
             result = supabase_req('bookings', method='POST', data=booking_data)
-            # Ensure the returned object has all fields for the frontend
-            return_data = result[0] if result else booking_data
-            if 'user_id' not in return_data: return_data['user_id'] = user_id
             
+            if result is None:
+                print("DEBUG: Supabase returned None for booking insert.")
+                # If representation wasn't returned, we might need to fetch it
+                return jsonify({"message": "Booking successful!", "booking": booking_data}), 201
+            
+            print(f"DEBUG: Supabase Insert Result: {result}")
+            return_data = result[0] if isinstance(result, list) and len(result) > 0 else result
             return jsonify({
                 "message": "Booking successful!", 
                 "booking": return_data
