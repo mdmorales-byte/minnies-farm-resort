@@ -445,7 +445,7 @@
             <div v-for="b in upcomingBookings" :key="b.id" class="booking-list-card">
               <div class="booking-thumb">{{ b.emoji }}</div>
               <div><div class="booking-room-name">{{ b.room }}</div><div class="booking-dates">{{ b.checkIn }} → {{ b.checkOut }}</div><span class="status-chip" :class="'status-'+b.status">{{ b.status }}</span></div>
-              <div style="text-align:right"><div class="booking-cost">₱{{ b.total.toLocaleString() }}</div><button class="btn btn-danger btn-sm" style="margin-top:0.5rem" @click="cancelBooking(b)">Cancel</button></div>
+              <div style="text-align:right"><div class="booking-cost">₱{{ (b.total || 0).toLocaleString() }}</div><button class="btn btn-danger btn-sm" style="margin-top:0.5rem" @click="cancelBooking(b)">Cancel</button></div>
             </div>
           </div>
           <div v-if="dashTab==='past'">
@@ -453,7 +453,7 @@
             <div v-for="b in pastBookings" :key="b.id" class="booking-list-card">
               <div class="booking-thumb">{{ b.emoji }}</div>
               <div><div class="booking-room-name">{{ b.room }}</div><div class="booking-dates">{{ b.checkIn }} → {{ b.checkOut }}</div><span class="status-chip" :class="'status-'+b.status">{{ b.status }}</span></div>
-              <div class="booking-cost">₱{{ b.total.toLocaleString() }}</div>
+              <div class="booking-cost">₱{{ (b.total || 0).toLocaleString() }}</div>
             </div>
           </div>
         </div>
@@ -592,7 +592,7 @@
                 <td>{{ b.checkIn }}</td>
                 <td>{{ b.checkOut }}</td>
                 <td><span class="status-chip" :class="'status-'+b.status">{{ b.status }}</span></td>
-                <td>₱{{ b.total.toLocaleString() }}</td>
+                <td>₱{{ (b.total || 0).toLocaleString() }}</td>
                 <td style="display:flex;gap:0.4rem;flex-wrap:wrap">
                   <button v-if="b.status === 'pending'" @click="updateBookingStatus(b, 'confirmed')" style="background:#2d6a5f;color:white;border:none;padding:4px 8px;border-radius:4px;cursor:pointer;font-size:12px">✓ Confirm</button>
                   <button v-if="b.status === 'confirmed'" @click="updateBookingStatus(b, 'completed')" style="background:#1a6a9a;color:white;border:none;padding:4px 8px;border-radius:4px;cursor:pointer;font-size:12px">✓ Complete</button>
@@ -649,7 +649,7 @@
           <div class="confirm-row"><span class="label">Check-in</span><span class="value">{{ lastBooking.checkIn }}</span></div>
           <div class="confirm-row"><span class="label">Check-out</span><span class="value">{{ lastBooking.checkOut }}</span></div>
           <div class="confirm-row"><span class="label">Guests</span><span class="value">{{ lastBooking.guests }}</span></div>
-          <div class="confirm-row"><span class="label">Total Paid</span><span class="value" style="color:var(--teal)">₱{{ lastBooking.total.toLocaleString() }}</span></div>
+          <div class="confirm-row"><span class="label">Total Paid</span><span class="value" style="color:var(--teal)">₱{{ (lastBooking.total || 0).toLocaleString() }}</span></div>
         </div>
         <div style="display:flex;gap:1rem;justify-content:center">
           <button class="btn btn-teal" @click="navigate('dashboard')">View My Bookings</button>
