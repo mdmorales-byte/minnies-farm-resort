@@ -205,12 +205,10 @@
               'badge-available': room.room_status === 'available',
               'badge-unavailable': room.room_status === 'fully_booked',
               'badge-maintenance': room.room_status === 'under_maintenance'
-            }" :style="{
-              'badge-maintenance': { background: '#8e735b', color: 'white' }
-            }">
+            }" :style="room.room_status === 'under_maintenance' ? { background: '#f5f0e8', color: '#8a6a1a', border: '1px solid #d8cfc0' } : {}">
               {{ 
                 room.room_status === 'available' ? 'Available' : 
-                room.room_status === 'under_maintenance' ? 'Maintenance' : 'Booked' 
+                room.room_status === 'under_maintenance' ? 'Under Maintenance' : 'Booked' 
               }}
             </span>
           </div>
