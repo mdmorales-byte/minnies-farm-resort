@@ -251,7 +251,8 @@ def handle_services():
 @app.route('/api/services/avails', methods=['GET'])
 def get_service_avails():
     try:
-        avails = supabase_req('service_availability?select=*')
+        # Based on logs, service_availability was not found. Using service_avails.
+        avails = supabase_req('service_avails?select=*&order=created_at.desc')
         return jsonify({"service_avails": avails or []}), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
@@ -308,9 +309,8 @@ def handle_bookings():
                     user_id = int(get_jwt_identity())
                 except: pass
 
-            # Final check of column names based on possible schema variations
-            # Based on logs, 'check_in_date' failed, but then 'guests' failed.
-            # Let's use the most standard names that match the frontend's original logic.
+            # Columns must match Supabase exactly. 
+            # If your previous bookings used 'check_in_date', 'num_guests', etc., we keep those.
             booking_data = {
                 "user_id": user_id,
                 "room_id": room_id,
@@ -325,13 +325,8 @@ def handle_bookings():
             print(f"DEBUG: Sending to Supabase: {booking_data}")
             result = supabase_req('bookings', method='POST', data=booking_data)
             
-            if result is None:
-                print("DEBUG: Supabase returned None for booking insert.")
-                # If representation wasn't returned, we might need to fetch it
-                return jsonify({"message": "Booking successful!", "booking": booking_data}), 201
-            
-            print(f"DEBUG: Supabase Insert Result: {result}")
-            return_data = result[0] if isinstance(result, list) and len(result) > 0 else result
+            # If Supabase returns nothing but didn't error, the insert likely worked.
+            return_data = result[0] if isinstance(result, list) and len(result) > 0 else (result if result else booking_data)
             return jsonify({
                 "message": "Booking successful!", 
                 "booking": return_data
