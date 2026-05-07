@@ -548,9 +548,9 @@ createApp({
         lastBooking.value = { 
           ref: data.booking.reference_code || 'REF-' + Date.now(), 
           room: selectedRoom.value.name, 
-          checkIn: data.booking.check_in_date, 
-          checkOut: data.booking.check_out_date, 
-          guests: data.booking.num_guests, 
+          checkIn: data.booking.check_in_date || bookingForm.value.checkIn, 
+          checkOut: data.booking.check_out_date || bookingForm.value.checkOut, 
+          guests: data.booking.num_guests || bookingForm.value.guests, 
           total: data.booking.total_price 
         };
         await fetchUserBookings();
