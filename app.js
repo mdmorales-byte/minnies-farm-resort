@@ -564,7 +564,7 @@ createApp({
     async function fetchUserBookings() {
       if (!token.value || !currentUser.value) return;
       try {
-        const res = await fetch(`${API_URL}/bookings`, { headers: { 'Authorization': `Bearer ${token.value}` } });
+        const res = await fetch(`${API_URL}/bookings?user_id=${currentUser.value.id}`, { headers: { 'Authorization': `Bearer ${token.value}` } });
         if (res.ok) {
           const data = await res.json();
           allBookings.value = (data.bookings || []).map(b => ({
@@ -583,14 +583,24 @@ createApp({
 
     async function fetchAllBookings() {
       try {
-        const res = await fetch(`${API_URL}/bookings`, { headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` } });
+        const res = await fetch(`${API_URL}/bookings?staff=true`, { headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` } });
         if (res.ok) {
           const data = await res.json();
-          allBookings.value = data.bookings.map(b => ({
-            ...b, guestName: b.guest_name, room: b.room_name,
-            checkIn: b.check_in_date, checkOut: b.check_out_date,
-            guests: b.num_guests, total: b.total_price
-          }));
+          // Fetch users and rooms for mapping
+          const usersRes = await fetch(`${API_URL}/health`); // Just to check if we can get all info
+          
+          allBookings.value = (data.bookings || []).map(b => {
+            const room = rooms.value.find(r => r.id === b.room_id);
+            return {
+              ...b, 
+              guestName: b.guest_name || 'Guest ' + b.user_id, 
+              room: room ? room.name : 'Room ' + b.room_id,
+              checkIn: b.check_in_date, 
+              checkOut: b.check_out_date,
+              guests: b.num_guests, 
+              total: b.total_price
+            };
+          });
         }
       } catch (e) { console.error(e); }
     }

@@ -260,7 +260,6 @@ def handle_bookings():
             room = supabase_req(f'rooms?id=eq.{room_id}&select=*')
             if room:
                 price = room[0].get('price_per_night', 0)
-                # Simple logic for nights (frontend should ideally send this)
                 data['total_price'] = data.get('total_price', price)
             
             result = supabase_req('bookings', method='POST', data=data)
@@ -268,12 +267,17 @@ def handle_bookings():
         
         # GET logic
         is_staff = request.args.get('staff') == 'true'
+        user_id = request.args.get('user_id')
+        
         if is_staff:
-            bookings = supabase_req('bookings?select=*')
+            # Staff can see all bookings
+            bookings = supabase_req('bookings?select=*&order=created_at.desc')
+        elif user_id:
+            # Guest sees only their own
+            bookings = supabase_req(f'bookings?user_id=eq.{user_id}&select=*&order=created_at.desc')
         else:
-            user_id = request.args.get('user_id')
-            endpoint = f'bookings?user_id=eq.{user_id}&select=*' if user_id else 'bookings?select=*'
-            bookings = supabase_req(endpoint)
+            # Fallback if no user_id is provided (should not happen for guests)
+            bookings = []
             
         return jsonify({"bookings": bookings or []}), 200
     except Exception as e:
@@ -301,16 +305,14 @@ def logout():
     return jsonify({"message": "Logged out"}), 200
 
 @app.route('/api/auth/me', methods=['GET'])
+@jwt_required()
 def get_me():
     try:
-        # Get user ID from token or simple auth check
-        auth_header = request.headers.get('Authorization')
-        if not auth_header:
-            return jsonify({"error": "No token"}), 401
-            
-        # For now, let's just return a placeholder or real user if possible
-        # This fixes the 'user is not defined' errors on frontend
-        return jsonify({"user": {"role": "staff", "name": "Staff User"}}), 200
+        user_id = get_jwt_identity()
+        users = supabase_req(f'users?id=eq.{user_id}&select=*')
+        if not users:
+            return jsonify({"error": "User not found"}), 404
+        return jsonify({"user": users[0]}), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
