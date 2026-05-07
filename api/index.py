@@ -309,13 +309,12 @@ def handle_bookings():
                     user_id = int(get_jwt_identity())
                 except: pass
 
-            # Columns must match Supabase exactly. 
-            # If your previous bookings used 'check_in_date', 'num_guests', etc., we keep those.
+            # Prepare Booking Data with verified snake_case columns
             booking_data = {
                 "user_id": user_id,
                 "room_id": room_id,
-                "check_in_date": data['check_in_date'],
-                "check_out_date": data['check_out_date'],
+                "check_in": data['check_in_date'],
+                "check_out": data['check_out_date'],
                 "num_guests": int(data.get('num_guests', 1)),
                 "total_price": total_price,
                 "status": "confirmed",
