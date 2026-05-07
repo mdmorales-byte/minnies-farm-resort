@@ -309,15 +309,15 @@ def handle_bookings():
                     user_id = int(get_jwt_identity())
                 except: pass
 
-            # Hybrid Schema Fix: Based on logs, check_in_date FAILED, but guests FAILED too.
+            # Final Schema Correction based on logs: 'check_in_date' failed, 'num_guests' failed.
             # Verified: 'check_in' and 'check_out' are likely correct.
-            # Probability: 'num_guests' and 'total_price' are the original columns.
+            # Let's try 'num_guest' (singular) and 'total_price'.
             booking_data = {
                 "user_id": user_id,
                 "room_id": room_id,
                 "check_in": data['check_in_date'],
                 "check_out": data['check_out_date'],
-                "num_guests": int(data.get('num_guests', 1)),
+                "num_guest": int(data.get('num_guests', 1)),
                 "total_price": total_price,
                 "status": "confirmed",
                 "reference_code": generate_ref()
