@@ -19,6 +19,63 @@
     };
   </script>
   <script async defer crossorigin="anonymous" src="https://connect.facebook.net/en_US/sdk.js"></script>
+<style>
+  .image-manage-grid {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 10px !important;
+    margin-top: 10px !important;
+  }
+  .image-manage-item {
+    position: relative !important;
+    width: 80px !important;
+    height: 80px !important;
+    border: 2px dashed #ddd !important;
+    border-radius: 8px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    overflow: hidden !important;
+    background: #fdfaf5 !important;
+  }
+  .image-manage-item img {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: cover !important;
+  }
+  .image-manage-overlay {
+    position: absolute !important;
+    inset: 0 !important;
+    background: rgba(0,0,0,0.4) !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    opacity: 0 !important;
+    transition: opacity 0.2s !important;
+  }
+  .image-manage-item:hover .image-manage-overlay {
+    opacity: 1 !important;
+  }
+  .btn-remove-img {
+    background: #c0392b !important;
+    color: white !important;
+    border: none !important;
+    padding: 4px 8px !important;
+    border-radius: 4px !important;
+    font-size: 10px !important;
+    cursor: pointer !important;
+  }
+  .upload-label {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    gap: 4px !important;
+    cursor: pointer !important;
+    color: #7a8c85 !important;
+  }
+  .upload-label i { font-style: normal !important; font-size: 1.2rem !important; }
+  .upload-label span { font-size: 0.6rem !important; font-weight: 500 !important; }
+</style>
 </head>
 <body>
 <div id="app">
