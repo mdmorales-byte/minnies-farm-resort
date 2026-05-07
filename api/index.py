@@ -350,8 +350,14 @@ def handle_bookings():
             bookings = supabase_req('bookings?select=*&order=created_at.desc')
         elif user_id_param:
             # Guest sees only their own
-            # Use fixed user_id filter format
-            endpoint = f'bookings?user_id=eq.{user_id_param}&select=*&order=created_at.desc'
+            # Force numeric user_id check in query
+            user_id_int = None
+            try:
+                user_id_int = int(user_id_param)
+            except:
+                pass
+                
+            endpoint = f'bookings?user_id=eq.{user_id_int if user_id_int is not None else user_id_param}&select=*&order=created_at.desc'
             print(f"DEBUG: Supabase request for user {user_id_param}: {endpoint}", flush=True)
             bookings = supabase_req(endpoint)
         else:
