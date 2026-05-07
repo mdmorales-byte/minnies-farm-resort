@@ -45,10 +45,13 @@ def supabase_req(endpoint, method='GET', data=None):
             'apikey': SUPABASE_KEY.strip(),
             'Authorization': f'Bearer {SUPABASE_KEY.strip()}',
             'Content-Type': 'application/json',
-            'Prefer': 'return=representation',
             'Cache-Control': 'no-cache, no-store, must-revalidate',
             'Pragma': 'no-cache'
         }
+        
+        # Only add return=representation for write operations
+        if method in ['POST', 'PATCH']:
+            headers['Prefer'] = 'return=representation'
         
         # Use a session with retries for better stability
         session = requests.Session()
@@ -56,6 +59,7 @@ def supabase_req(endpoint, method='GET', data=None):
         session.mount('https://', adapter)
         
         print(f"Supabase API Call: {method} {url}")
+        if data: print(f"Supabase Payload: {json.dumps(data)}")
         
         if method == 'GET':
             res = session.get(url, headers=headers, timeout=15)
@@ -68,7 +72,9 @@ def supabase_req(endpoint, method='GET', data=None):
         else:
             return None
             
-        print(f"Supabase Response: {res.status_code} - {res.text[:200]}")
+        print(f"Supabase Status: {res.status_code}")
+        print(f"Supabase Response: {res.text[:500]}")
+        
         res.raise_for_status()
         return res.json() if res.text else []
         
