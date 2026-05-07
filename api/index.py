@@ -309,15 +309,14 @@ def handle_bookings():
                     user_id = int(get_jwt_identity())
                 except: pass
 
-            # Final Schema Correction based on logs: 'check_in_date' failed, 'num_guests' failed.
-            # Verified: 'check_in' and 'check_out' are likely correct.
-            # Let's try 'num_guest' (singular) and 'total_price'.
+            # VERIFIED SCHEMA FROM SUPABASE SCREENSHOT:
+            # check_in_date, check_out_date, total_price, status, guest_count
             booking_data = {
                 "user_id": user_id,
                 "room_id": room_id,
-                "check_in": data['check_in_date'],
-                "check_out": data['check_out_date'],
-                "num_guest": int(data.get('num_guests', 1)),
+                "check_in_date": data['check_in_date'],
+                "check_out_date": data['check_out_date'],
+                "guest_count": int(data.get('num_guests', 1)),
                 "total_price": total_price,
                 "status": "confirmed",
                 "reference_code": generate_ref()

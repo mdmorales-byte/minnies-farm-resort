@@ -575,10 +575,10 @@ createApp({
               guestName: b.guestName || currentUser.value.name,
               emoji: room?.emoji || '🏠',
               room: room?.name || 'Room ' + b.room_id,
-              checkIn: b.check_in || b.check_in_date,
-              checkOut: b.check_out || b.check_out_date,
-              guests: b.guests || b.num_guests,
-              total: b.total || b.total_price
+              checkIn: b.check_in_date,
+              checkOut: b.check_out_date,
+              guests: b.guest_count,
+              total: b.total_price
             };
           });
         }
@@ -598,10 +598,10 @@ createApp({
               ...b, 
               guestName: b.guest_name || 'Guest ' + b.user_id, 
               room: b.room_name || room?.name || 'Room ' + b.room_id,
-              checkIn: b.check_in || b.check_in_date, 
-              checkOut: b.check_out || b.check_out_date,
-              guests: b.guests || b.num_guests, 
-              total: b.total || b.total_price
+              checkIn: b.check_in_date, 
+              checkOut: b.check_out_date,
+              guests: b.guest_count, 
+              total: b.total_price
             };
           });
         }
