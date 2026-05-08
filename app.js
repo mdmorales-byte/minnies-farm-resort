@@ -904,21 +904,30 @@ createApp({
       showDeleteModal.value = true;
     }
 
-    function deleteBooking(booking) {
-      pendingDeleteBookingId.value = booking.id;
-      showDeleteBookingModal.value = true;
-    }
-
-    async function confirmDelete() {
+    async function confirmDeleteServiceAvail() {
+      if (!pendingDeleteId.value || !token.value) return;
+      loading.value = true;
       try {
         const res = await fetch(`${API_URL}/services/avails/${pendingDeleteId.value}`, {
           method: 'DELETE',
           headers: { 'Authorization': `Bearer ${token.value}` }
         });
-        if (res.ok) await fetchServiceAvails();
-      } catch (err) { console.error(err); }
+        if (res.ok) {
+          showToast('Request deleted', 'success');
+          await fetchServiceAvails();
+        } else {
+          const d = await res.json();
+          showToast(d.error || 'Delete failed', 'error');
+        }
+      } catch (err) { showToast('Connection error.', 'error'); }
       showDeleteModal.value = false;
       pendingDeleteId.value = null;
+      loading.value = false;
+    }
+
+    function deleteBooking(booking) {
+      pendingDeleteBookingId.value = booking.id;
+      showDeleteBookingModal.value = true;
     }
 
     async function confirmDeleteBooking() {
@@ -933,23 +942,27 @@ createApp({
       pendingDeleteBookingId.value = null;
     }
 
-    async function updateAvailStatus(id, status) {
+    async function updateAvailStatus(id, newStatus) {
+      if (!token.value) return;
+      loading.value = true;
       try {
-        const res = await fetch(`${API_URL}/services/avails/${id}/status`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token.value}` },
-          body: JSON.stringify({ status })
+        const res = await fetch(`${API_URL}/services/avails/${id}`, {
+          method: 'PATCH',
+          headers: { 
+            'Content-Type': 'application/json', 
+            'Authorization': `Bearer ${token.value}` 
+          },
+          body: JSON.stringify({ status: newStatus })
         });
-        const data = await res.json();
         if (res.ok) {
-          showToast('Status updated! ', 'success');
-          fetchServiceAvails();
+          showToast(`Service request ${newStatus}`, 'success');
+          await fetchServiceAvails();
         } else {
-          showToast(data.error || 'Failed to update status.', 'error');
+          const d = await res.json();
+          showToast(d.error || 'Update failed', 'error');
         }
-      } catch (err) {
-        showToast('Connection error.', 'error');
-      }
+      } catch (err) { showToast('Connection error.', 'error'); }
+      loading.value = false;
     }
 
     async function updateServiceStock(service) {
