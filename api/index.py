@@ -254,11 +254,12 @@ def get_service_avails():
     try:
         # Based on logs, service_availability was not found. Using service_avails.
         # Joining with services table to get service names and prices
-        endpoint = 'service_avails?select=*,services(name,price)&order=created_at.desc'
+        # VERIFIED SCHEMA: 'created_at' does NOT exist. Use 'availed_at' for ordering.
+        endpoint = 'service_avails?select=*,services(name,price)&order=availed_at.desc'
         
         user_id = request.args.get('user_id')
         if user_id:
-            endpoint = f'service_avails?user_id=eq.{user_id}&select=*,services(name,price)&order=created_at.desc'
+            endpoint = f'service_avails?user_id=eq.{user_id}&select=*,services(name,price)&order=availed_at.desc'
             
         avails = supabase_req(endpoint)
         
@@ -273,7 +274,7 @@ def get_service_avails():
                     "user_id": a.get('user_id'),
                     "status": a.get('status'),
                     "notes": a.get('notes'),
-                    "created_at": a.get('created_at'),
+                    "created_at": a.get('availed_at'), # Map availed_at to created_at for frontend
                     "service_name": service_info.get('name', 'Unknown Service'),
                     "total_price": service_info.get('price', 0)
                 })
