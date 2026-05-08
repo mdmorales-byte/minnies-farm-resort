@@ -1157,7 +1157,7 @@ createApp({
       deleteRoom, confirmDeleteRoom, showDeleteRoomModal, pendingDeleteRoom,
       updateBookingStatus, fetchAllBookings, services, fetchServices,
       statusLabel, statusClass, availService, showServiceModal, serviceModalData,
-      serviceAvails, fetchServiceAvails, deleteServiceAvail, confirmDelete,
+      serviceAvails, fetchServiceAvails, deleteServiceAvail, confirmDeleteServiceAvail,
       showDeleteModal, pendingDeleteId, deleteBooking, confirmDeleteBooking,
       showDeleteBookingModal, pendingDeleteBookingId, updateAvailStatus,
       updateServiceStock,
