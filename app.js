@@ -79,24 +79,24 @@ createApp({
         // Clean URL after capturing token
         window.history.replaceState({}, document.title, window.location.pathname);
       }
-    });
 
-    // Check URL for verify token on load
-    const urlVerifyToken = uParams.get('verify_token');
-    if (urlVerifyToken) {
-      fetch(`${API_URL}/auth/verify-email?token=${urlVerifyToken}`)
-        .then(res => res.json())
-        .then(data => {
-          authMsg.value = data.message || data.error;
-          authMsgType.value = data.message ? 'success' : 'error';
-          page.value = 'auth';
-        })
-        .catch(err => {
-          authMsg.value = 'Connection error: ' + err.message;
-          authMsgType.value = 'error';
-          page.value = 'auth';
-        });
-    }
+      // Check URL for verify token on load
+      const urlVerifyToken = uParams.get('verify_token');
+      if (urlVerifyToken) {
+        fetch(`${API_URL}/auth/verify-email?token=${urlVerifyToken}`)
+          .then(res => res.json())
+          .then(data => {
+            authMsg.value = data.message || data.error;
+            authMsgType.value = data.message ? 'success' : 'error';
+            page.value = 'auth';
+          })
+          .catch(err => {
+            authMsg.value = 'Connection error: ' + err.message;
+            authMsgType.value = 'error';
+            page.value = 'auth';
+          });
+      }
+    });
 
     async function doResetPassword() {
       if (!resetPassword.value || !resetPasswordConfirm.value) return;
