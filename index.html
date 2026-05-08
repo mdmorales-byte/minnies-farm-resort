@@ -369,17 +369,17 @@
       <p>You don't need to book a room to enjoy Minnie's Farm Resort. Drop in, have fun, and make memories!</p>
     </div>
     <div class="container">
-      <div style="margin-top:3rem;margin-bottom:1rem"><div class="divider-title"><h2>Day Services</h2><p>Perfect for walk-in guests who just want to enjoy the resort for the day</p></div></div>
+      <div style="margin-top:3rem;margin-bottom:1rem"><div class="divider-title"><h2>Resort Services</h2><p>Perfect for guests who want to enjoy the resort for the day</p></div></div>
       <div class="service-cards">
-        <template v-if="services && services.length && services.some(s => s.is_active && s.category === 'day_service')">
-          <div class="service-card" v-for="s in services" :key="s.id" v-if="s && s.is_active && s.category === 'day_service'">
-            <div class="service-card-header" :style="{ background: s.name === 'Day Entrance' ? 'url(https://i.imgur.com/2UDN3qi.jpg) center/cover' : 'url(https://i.imgur.com/taAWIUe.jpg) center/cover' }">
-              <span class="service-card-icon">{{ s.name === 'Day Entrance' ? '🌿' : '🎤' }}</span>
+        <template v-if="!servicesLoading && services && services.length">
+          <div class="service-card" v-for="s in services" :key="s.id">
+            <div class="service-card-header" :style="{ background: s.name.includes('Entrance') ? 'url(https://i.imgur.com/2UDN3qi.jpg) center/cover' : (s.name.includes('Karaoke') ? 'url(https://i.imgur.com/taAWIUe.jpg) center/cover' : 'linear-gradient(135deg,#2d4a1e,#4a7c3f)') }">
+              <span class="service-card-icon">{{ s.name.includes('Entrance') ? '🌿' : (s.name.includes('Karaoke') ? '🎤' : '🎁') }}</span>
               <div class="service-card-name">{{ s.name }}</div>
               <div class="service-card-tagline">{{ s.description }}</div>
             </div>
             <div class="service-card-body">
-              <div class="service-price-block"><span class="service-price">₱{{ s.price }}</span><span class="service-price-label">per person</span></div>
+              <div class="service-price-block"><span class="service-price">₱{{ s.price }}</span><span class="service-price-label">{{ s.category === 'bundle' ? 'per bundle' : 'per person' }}</span></div>
               <div v-if="s.stock_quantity !== undefined && s.stock_quantity !== -1" class="stock-badge" :class="s.stock_quantity > 0 ? 'in-stock' : 'out-of-stock'">
                 {{ s.stock_quantity > 0 ? 'Available: ' + s.stock_quantity : 'Fully Booked / Out of Stock' }}
               </div>
@@ -389,24 +389,20 @@
             </div>
           </div>
         </template>
-        <div v-else class="empty-state" style="grid-column: 1/-1">
+        
+        <!-- Loading State -->
+        <div v-else-if="servicesLoading" class="empty-state" style="grid-column: 1/-1">
           <div class="icon">🌿</div>
           <p>Loading services...</p>
         </div>
-      </div>
-      <div style="background:linear-gradient(135deg,#2d4a1e,#4a7c3f);border-radius:20px;padding:2.5rem;margin-bottom:3rem;display:grid;grid-template-columns:1fr auto;gap:2rem;align-items:center">
-        <div>
-          <div style="font-size:0.78rem;letter-spacing:0.15em;text-transform:uppercase;color:#c8f0a0;margin-bottom:0.5rem">🎉 Best Value</div>
-          <h3 style="font-family:'Cormorant Garamond',serif;font-size:1.8rem;font-weight:300;color:var(--white);margin-bottom:0.5rem">Day Fun Bundle</h3>
-          <p style="color:rgba(255,255,255,0.7);font-size:0.9rem;line-height:1.7">Entrance + Karaoke session combo — perfect for barkadas and family outings!</p>
-          <div style="display:flex;align-items:baseline;gap:0.75rem;margin-top:1rem">
-            <span style="font-family:'Cormorant Garamond',serif;font-size:2.5rem;font-weight:600;color:#fde68a">₱550</span>
-            <span style="color:rgba(255,255,255,0.5);text-decoration:line-through;font-size:1rem">₱600</span>
-            <span style="background:rgba(255,255,255,0.15);color:#fde68a;padding:0.2rem 0.6rem;border-radius:20px;font-size:0.75rem">Save ₱50</span>
-          </div>
+
+        <!-- Empty State -->
+        <div v-else class="empty-state" style="grid-column: 1/-1">
+          <div class="icon">🏜️</div>
+          <p>No services are currently available for booking.</p>
         </div>
-        <div style="text-align:center"><div style="font-size:3rem;margin-bottom:0.75rem">🎤🌿</div><button class="btn btn-primary" @click="availService('Day Fun Bundle', 550)">Get Bundle</button></div>
       </div>
+    </div>
       <div class="divider-title"><h2>Frequently Asked Questions</h2><p>Everything you need to know before visiting</p></div>
       <div class="services-faq">
         <div class="faq-item" v-for="faq in faqs" :key="faq.q">
