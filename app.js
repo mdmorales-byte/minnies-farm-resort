@@ -1052,7 +1052,14 @@ createApp({
         'Day Fun Bundle (Entrance + Karaoke)': 3,
         'Day Fun Bundle': 3 // Fallback for shorter name
       };
-      const serviceId = serviceIds[name];
+      
+      // Flexible ID lookup (by name or by matching substring)
+      let serviceId = serviceIds[name];
+      if (!serviceId) {
+          if (name.toLowerCase().includes('entrance')) serviceId = 1;
+          else if (name.toLowerCase().includes('karaoke')) serviceId = 2;
+          else if (name.toLowerCase().includes('bundle')) serviceId = 3;
+      }
 
       if (!serviceId) {
         showToast('Service ID not found for ' + name, 'error');
