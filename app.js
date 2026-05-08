@@ -869,12 +869,21 @@ createApp({
     }
 
     async function fetchServiceAvails() {
+      if (!token.value || !currentUser.value) return;
       try {
-        const res = await fetch(`${API_URL}/services/avails`, {
+        const url = currentUser.value.role === 'staff' 
+          ? `${API_URL}/services/avails?_t=${Date.now()}`
+          : `${API_URL}/services/avails?user_id=${currentUser.value.id}&_t=${Date.now()}`;
+          
+        const res = await fetch(url, {
           headers: { 'Authorization': `Bearer ${token.value}` }
         });
-        if (res.ok) { const data = await res.json(); serviceAvails.value = data.avails || []; }
-      } catch (err) { console.error(err); }
+        if (res.ok) { 
+          const data = await res.json(); 
+          serviceAvails.value = data.avails || []; 
+          console.log('Service Avails Received:', serviceAvails.value);
+        }
+      } catch (err) { console.error('Fetch service avails error:', err); }
     }
 
     function deleteServiceAvail(id) {

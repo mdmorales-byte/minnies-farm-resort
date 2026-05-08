@@ -252,9 +252,34 @@ def handle_services():
 def get_service_avails():
     try:
         # Based on logs, service_availability was not found. Using service_avails.
-        avails = supabase_req('service_avails?select=*&order=created_at.desc')
-        return jsonify({"service_avails": avails or []}), 200
+        # Joining with services table to get service names and prices
+        endpoint = 'service_avails?select=*,services(name,price)&order=created_at.desc'
+        
+        user_id = request.args.get('user_id')
+        if user_id:
+            endpoint = f'service_avails?user_id=eq.{user_id}&select=*,services(name,price)&order=created_at.desc'
+            
+        avails = supabase_req(endpoint)
+        
+        # Flatten the joined data for the frontend
+        formatted_avails = []
+        if avails and isinstance(avails, list):
+            for a in avails:
+                service_info = a.get('services', {})
+                formatted_avails.append({
+                    "id": a.get('id'),
+                    "service_id": a.get('service_id'),
+                    "user_id": a.get('user_id'),
+                    "status": a.get('status'),
+                    "notes": a.get('notes'),
+                    "created_at": a.get('created_at'),
+                    "service_name": service_info.get('name', 'Unknown Service'),
+                    "total_price": service_info.get('price', 0)
+                })
+        
+        return jsonify({"avails": formatted_avails}), 200
     except Exception as e:
+        print(f"Error fetching service avails: {e}", flush=True)
         return jsonify({"error": str(e)}), 500
 
 import random
