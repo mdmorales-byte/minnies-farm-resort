@@ -551,20 +551,47 @@ def handle_single_service(service_id):
 @app.route('/api/services/<int:service_id>/avail', methods=['POST'])
 def avail_service(service_id):
     try:
-        # Create a new entry in service_availability table
+        # Create a new entry in service_avails table based on Supabase schema
         data = request.get_json() or {}
-        user_id = 1 # Placeholder or get from JWT
         
+        # Get user_id from token or fallback to provided user_id
+        user_id = data.get('user_id')
+        try:
+            from flask_jwt_extended import get_jwt_identity
+            token_user_id = get_jwt_identity()
+            if token_user_id:
+                user_id = int(token_user_id)
+        except: pass
+        
+        if not user_id:
+            return jsonify({"error": "User authentication required"}), 401
+            
+        # Fetch service price for total_price
+        service_res = supabase_req(f'services?id=eq.{service_id}&select=*')
+        if not service_res:
+            return jsonify({"error": "Service not found"}), 404
+        
+        service_price = float(service_res[0].get('price', 0))
+        quantity = int(data.get('quantity', 1))
+        
+        # VERIFIED SCHEMA FROM SUPABASE SCREENSHOT:
+        # user_id, service_id, booking_id, quantity, total_price, availed_at, status
         insert_data = {
             "service_id": service_id,
             "user_id": user_id,
+            "booking_id": data.get('booking_id'), # Optional link to a room booking
+            "quantity": quantity,
+            "total_price": service_price * quantity,
             "status": "pending",
-            "notes": data.get('notes', '')
+            "notes": data.get('notes', '') # Keep for internal use if exists
         }
         
-        result = supabase_req('service_availability', method='POST', data=insert_data)
+        print(f"DEBUG: Recording service request: {insert_data}", flush=True)
+        result = supabase_req('service_avails', method='POST', data=insert_data)
+        
         return jsonify({"message": "Service request submitted!", "result": result}), 201
     except Exception as e:
+        print(f"Error in avail_service: {e}", flush=True)
         return jsonify({"error": str(e)}), 500
 
 @app.route('/api/rooms/upload-image', methods=['POST'])
