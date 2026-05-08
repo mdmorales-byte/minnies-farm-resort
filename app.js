@@ -810,6 +810,26 @@ createApp({
       showToast(`Image ${index} removed. Save to apply.`, 'info');
     }
 
+    async function fetchServices() {
+      servicesLoading.value = true;
+      try {
+        const isStaff = (currentUser.value && currentUser.value.role === 'staff') ? 'true' : 'false';
+        const url = `${API_URL}/services?staff=${isStaff}&_t=${Date.now()}`;
+        const res = await fetch(url, {
+          headers: { 
+            'Cache-Control': 'no-cache', 
+            'Pragma': 'no-cache',
+            'Authorization': token.value ? `Bearer ${token.value}` : ''
+          }
+        });
+        if (res.ok) { 
+          const data = await res.json(); 
+          services.value = data.services || [];
+        }
+      } catch (err) { console.error('Fetch services error:', err); }
+      servicesLoading.value = false;
+    }
+
     async function handleFileUpload(event, index) {
       const file = event.target.files[0];
       if (!file) return;
