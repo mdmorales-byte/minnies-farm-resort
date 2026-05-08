@@ -238,18 +238,27 @@ def handle_services():
         if is_staff:
             # Staff sees everything
             services = supabase_req('services?select=*&order=id.asc')
-            print(f"Staff view - total services: {len(services) if services else 0}", flush=True)
+            print(f"DEBUG: Staff view - total services: {len(services) if services else 0}", flush=True)
         else:
             # Guests ONLY see active services
-            # Using eq.true which is the standard PostgREST way for boolean true
-            # We also handle case where it might be stored as text but verified boolean in screenshot
-            services = supabase_req('services?is_active=is.true&select=*&order=id.asc')
+            # Try a broader query first to see what's in the DB
+            print("DEBUG: Fetching active services for guest...", flush=True)
             
-            # Fallback check if is.true fails (some PostgREST versions prefer eq.true)
-            if not services and services is not None:
-                 services = supabase_req('services?is_active=eq.true&select=*&order=id.asc')
-                 
-            print(f"Public view - active services: {len(services) if services else 0}", flush=True)
+            # Use multiple filter attempts for maximum compatibility
+            services = supabase_req('services?is_active=eq.true&select=*&order=id.asc')
+            
+            # If nothing found, try literal string 'true' or 1 as fallbacks
+            if not services:
+                services = supabase_req('services?is_active=eq.1&select=*&order=id.asc')
+            
+            # FINAL FALLBACK: If still nothing, fetch all and filter in Python
+            # This is the "safe" way to ensure we never get a stuck loading screen
+            if not services:
+                all_s = supabase_req('services?select=*&order=id.asc')
+                if all_s:
+                    services = [s for s in all_s if str(s.get('is_active')).lower() in ['true', '1', 't']]
+            
+            print(f"DEBUG: Public view - active services found: {len(services) if services else 0}", flush=True)
             
         return jsonify({"services": services or []}), 200
     except Exception as e:
