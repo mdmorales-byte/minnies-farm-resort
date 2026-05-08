@@ -255,12 +255,21 @@ def get_service_avails():
         # Based on logs, service_availability was not found. Using service_avails.
         # Joining with services table to get service names and prices
         # VERIFIED SCHEMA: 'created_at' does NOT exist. Use 'availed_at' for ordering.
-        endpoint = 'service_avails?select=*,services(name,price)&order=availed_at.desc'
         
         user_id = request.args.get('user_id')
-        if user_id:
+        staff_param = request.args.get('staff', 'false').lower() == 'true'
+        
+        if staff_param:
+            # Staff sees everything
+            endpoint = 'service_avails?select=*,services(name,price)&order=availed_at.desc'
+        elif user_id:
+            # Guest sees only their own
             endpoint = f'service_avails?user_id=eq.{user_id}&select=*,services(name,price)&order=availed_at.desc'
+        else:
+            # Fallback for staff if param missing but role is staff (handled in frontend usually)
+            endpoint = 'service_avails?select=*,services(name,price)&order=availed_at.desc'
             
+        print(f"DEBUG: Service Avails Request: {endpoint}", flush=True)
         avails = supabase_req(endpoint)
         
         # Flatten the joined data for the frontend
@@ -274,11 +283,13 @@ def get_service_avails():
                     "user_id": a.get('user_id'),
                     "status": a.get('status'),
                     "notes": a.get('notes'),
-                    "created_at": a.get('availed_at'), # Map availed_at to created_at for frontend
+                    "availed_at": a.get('availed_at'),
+                    "created_at": a.get('availed_at'), # Keep for frontend compatibility
                     "service_name": service_info.get('name', 'Unknown Service'),
-                    "total_price": service_info.get('price', 0)
+                    "total_price": a.get('total_price') or service_info.get('price', 0)
                 })
         
+        print(f"DEBUG: Returning {len(formatted_avails)} formatted avails", flush=True)
         return jsonify({"avails": formatted_avails}), 200
     except Exception as e:
         print(f"Error fetching service avails: {e}", flush=True)
