@@ -1053,24 +1053,54 @@ createApp({
     async function availService(name, price) {
       if (!currentUser.value) { navigate('auth'); return; }
 
-      const serviceIds = { 'Day Entrance': 1, 'Karaoke Room': 2, 'Day Fun Bundle': 3 };
+      // Map service names to their database IDs (from Supabase screenshot)
+      const serviceIds = { 
+        'Day Entrance': 1, 
+        'Karaoke Room': 2, 
+        'Day Fun Bundle (Entrance + Karaoke)': 3,
+        'Day Fun Bundle': 3 // Fallback for shorter name
+      };
       const serviceId = serviceIds[name];
+
+      if (!serviceId) {
+        showToast('Service ID not found for ' + name, 'error');
+        return;
+      }
+
+      showToast(`Processing request for ${name}... ⏳`, 'info');
 
       try {
         const res = await fetch(`${API_URL}/services/${serviceId}/avail`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token.value}` },
-          body: JSON.stringify({ notes: `Request from ${currentUser.value.name}` })
+          headers: { 
+            'Content-Type': 'application/json', 
+            'Authorization': `Bearer ${token.value}` 
+          },
+          body: JSON.stringify({ 
+            notes: `Request from ${currentUser.value.name}`,
+            quantity: 1
+          })
         });
-        if (!res.ok) { const d = await res.json(); alert(d.error || 'Error'); return; }
-      } catch (err) { console.error(err); }
+        
+        const data = await res.json();
+        if (!res.ok) { 
+          showToast(data.error || 'Error submitting request', 'error'); 
+          return; 
+        }
 
-      serviceModalData.value = {
-        name, price,
-        guest: currentUser.value.name,
-        icon: name === 'Karaoke Room' ? '' : name === 'Day Fun Bundle' ? '' : ''
-      };
-      showServiceModal.value = true;
+        serviceModalData.value = {
+          name, 
+          price,
+          guest: currentUser.value.name,
+          icon: name.includes('Karaoke') ? '🎤' : '🌿'
+        };
+        showServiceModal.value = true;
+        showToast('Service request submitted! 🎉', 'success');
+        fetchServiceAvails(); // Refresh dashboard list
+      } catch (err) { 
+        console.error('Service request error:', err);
+        showToast('Connection error.', 'error');
+      }
     }
 
     // ── MOUNT ──────────
