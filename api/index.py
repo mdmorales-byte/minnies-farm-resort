@@ -241,8 +241,14 @@ def handle_services():
             print(f"Staff view - total services: {len(services) if services else 0}", flush=True)
         else:
             # Guests ONLY see active services
-            # Ensure we filter by is_active=true correctly
-            services = supabase_req('services?is_active=eq.true&select=*&order=id.asc')
+            # Using eq.true which is the standard PostgREST way for boolean true
+            # We also handle case where it might be stored as text but verified boolean in screenshot
+            services = supabase_req('services?is_active=is.true&select=*&order=id.asc')
+            
+            # Fallback check if is.true fails (some PostgREST versions prefer eq.true)
+            if not services and services is not None:
+                 services = supabase_req('services?is_active=eq.true&select=*&order=id.asc')
+                 
             print(f"Public view - active services: {len(services) if services else 0}", flush=True)
             
         return jsonify({"services": services or []}), 200
