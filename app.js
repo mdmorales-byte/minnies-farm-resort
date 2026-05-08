@@ -810,6 +810,8 @@ createApp({
       showToast(`Image ${index} removed. Save to apply.`, 'info');
     }
 
+    const servicesLoading = ref(false);
+
     async function fetchServices() {
       servicesLoading.value = true;
       try {
