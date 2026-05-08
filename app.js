@@ -75,6 +75,8 @@ createApp({
     if (urlResetToken) {
       resetToken.value = urlResetToken;
       showResetPassword.value = true;
+      // Clean URL after capturing token
+      window.history.replaceState({}, document.title, window.location.pathname);
     }
 
     // Check URL for verify token on load
