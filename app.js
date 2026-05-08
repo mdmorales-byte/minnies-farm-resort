@@ -69,32 +69,25 @@ createApp({
     const resetMsgType = ref('');
     const resetToken = ref('');
 
-    // Check URL for reset token on load
+    // Emergency Kill-Switch for Reset Modal
+    const hasProcessedToken = ref(false);
+
     onMounted(() => {
+      if (hasProcessedToken.value) return;
+
       const uParams = new URLSearchParams(window.location.search);
       const urlResetToken = uParams.get('reset_token');
-      if (urlResetToken) {
+      
+      if (urlResetToken && !hasProcessedToken.value) {
         resetToken.value = urlResetToken;
         showResetPassword.value = true;
-        // Clean URL after capturing token
-        window.history.replaceState({}, document.title, window.location.pathname);
-      }
-
-      // Check URL for verify token on load
-      const urlVerifyToken = uParams.get('verify_token');
-      if (urlVerifyToken) {
-        fetch(`${API_URL}/auth/verify-email?token=${urlVerifyToken}`)
-          .then(res => res.json())
-          .then(data => {
-            authMsg.value = data.message || data.error;
-            authMsgType.value = data.message ? 'success' : 'error';
-            page.value = 'auth';
-          })
-          .catch(err => {
-            authMsg.value = 'Connection error: ' + err.message;
-            authMsgType.value = 'error';
-            page.value = 'auth';
-          });
+        hasProcessedToken.value = true;
+        
+        // DESTROY the token from URL immediately
+        const cleanUrl = window.location.origin + window.location.pathname;
+        window.history.replaceState({}, document.title, cleanUrl);
+        
+        console.log("Emergency: Reset token captured and URL purged.");
       }
     });
 
