@@ -565,17 +565,32 @@ def avail_service(service_id):
         # Create a new entry in service_avails table based on Supabase schema
         data = request.get_json() or {}
         
-        # Get user_id from token or fallback to provided user_id
-        user_id = data.get('user_id')
-        try:
-            from flask_jwt_extended import get_jwt_identity
-            token_user_id = get_jwt_identity()
-            if token_user_id:
-                user_id = int(token_user_id)
-        except: pass
+        # Get user_id from token (required for this action)
+        user_id = None
         
+        # Try to get user_id from JWT token manually if flask_jwt_extended is having issues
+        auth_header = request.headers.get('Authorization')
+        if auth_header and auth_header.startswith('Bearer '):
+            received_token = auth_header.split(' ')[1]
+            try:
+                # Use flask_jwt_extended to decode if possible
+                from flask_jwt_extended import decode_token
+                decoded = decode_token(received_token)
+                user_id = decoded.get('sub') or decoded.get('identity')
+            except Exception as jwt_err:
+                print(f"DEBUG: JWT Decode error: {jwt_err}", flush=True)
+                
+        # Fallback to body if token parsing failed but we have a body user_id
         if not user_id:
-            return jsonify({"error": "User authentication required"}), 401
+            user_id = data.get('user_id')
+            
+        if not user_id:
+            print("DEBUG: 401 Unauthorized - No user_id found in token or body", flush=True)
+            return jsonify({"error": "User authentication required. Please log in again."}), 401
+            
+        # Ensure user_id is int
+        try: user_id = int(user_id)
+        except: pass
             
         # Fetch service price for total_price
         service_res = supabase_req(f'services?id=eq.{service_id}&select=*')
@@ -590,11 +605,10 @@ def avail_service(service_id):
         insert_data = {
             "service_id": service_id,
             "user_id": user_id,
-            "booking_id": data.get('booking_id'), # Optional link to a room booking
+            "booking_id": data.get('booking_id'), 
             "quantity": quantity,
             "total_price": service_price * quantity,
-            "status": "pending",
-            "notes": data.get('notes', '') # Keep for internal use if exists
+            "status": "pending"
         }
         
         print(f"DEBUG: Recording service request: {insert_data}", flush=True)
@@ -602,7 +616,7 @@ def avail_service(service_id):
         
         return jsonify({"message": "Service request submitted!", "result": result}), 201
     except Exception as e:
-        print(f"Error in avail_service: {e}", flush=True)
+        print(f"Error in avail_service: {str(e)}", flush=True)
         return jsonify({"error": str(e)}), 500
 
 @app.route('/api/rooms/upload-image', methods=['POST'])
