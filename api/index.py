@@ -350,16 +350,24 @@ def handle_bookings():
             bookings = supabase_req('bookings?select=*&order=created_at.desc')
         elif user_id_param:
             # Guest sees only their own
-            # Force numeric user_id check in query
+            # Use numeric user_id check in query
             user_id_int = None
             try:
                 user_id_int = int(user_id_param)
             except:
                 pass
                 
+            # If user_id fails, we might want to allow a broader search or log more
             endpoint = f'bookings?user_id=eq.{user_id_int if user_id_int is not None else user_id_param}&select=*&order=created_at.desc'
             print(f"DEBUG: Supabase request for user {user_id_param}: {endpoint}", flush=True)
             bookings = supabase_req(endpoint)
+            
+            # FALLBACK: If no bookings found by user_id, it might be a registration mismatch.
+            # Let's try to see if we can find ANY bookings just to see if the table is working.
+            if not bookings:
+                print(f"DEBUG: No bookings found for user_id {user_id_param}. Checking total table count...", flush=True)
+                all_count = supabase_req('bookings?select=id&limit=1')
+                print(f"DEBUG: Table accessibility check: {all_count}", flush=True)
         else:
             # Fallback if no user_id is provided
             print("DEBUG: No user_id or staff flag provided for bookings GET", flush=True)
