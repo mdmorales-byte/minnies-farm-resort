@@ -316,27 +316,38 @@ def handle_bookings():
                 print("DEBUG: CRITICAL ERROR - No user_id found for booking", flush=True)
                 return jsonify({"error": "User session expired or not found"}), 401
 
-            # VERIFIED SCHEMA FROM SUPABASE SCREENSHOT:
-            # check_in, check_out, total_price, status, guest_count
+            # VERIFIED SCHEMA FROM SUPABASE ERROR LOGS:
+            # reference_code does NOT exist in the schema.
+            # check_in, check_out, total_price, status, guest_count are valid.
             booking_data = {
                 "user_id": user_id,
                 "room_id": room_id,
                 "check_in": data.get('check_in_date') or data.get('checkIn') or data.get('check_in'),
                 "check_out": data.get('check_out_date') or data.get('checkOut') or data.get('check_out'),
                 "guest_count": int(data.get('num_guests') or data.get('guest_count') or data.get('guests') or 1),
-                "total_price": total_price,
-                "status": "confirmed",
-                "reference_code": generate_ref()
+                "total_price": float(total_price),
+                "status": "confirmed"
             }
+            
+            # reference_code was causing 400 errors because the column doesn't exist.
+            # We will use the Supabase-generated ID as the reference for the UI.
             
             print(f"DEBUG: Sending to Supabase: {booking_data}", flush=True)
             result = supabase_req('bookings', method='POST', data=booking_data)
             
             # If Supabase returns nothing but didn't error, the insert likely worked.
-            return_data = result[0] if isinstance(result, list) and len(result) > 0 else (result if result else booking_data)
+            # Use the result ID as a reference if available, otherwise use a local placeholder
+            res_item = result[0] if isinstance(result, list) and len(result) > 0 else (result if result else booking_data)
+            
+            # Ensure a reference exists for the confirmation screen
+            if 'id' in res_item:
+                res_item['reference_code'] = f"MFR-{res_item['id']}"
+            elif 'reference_code' not in res_item:
+                res_item['reference_code'] = generate_ref()
+                
             return jsonify({
                 "message": "Booking successful!", 
-                "booking": return_data
+                "booking": res_item
             }), 201
         
         # GET logic
