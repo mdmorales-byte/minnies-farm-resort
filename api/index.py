@@ -254,7 +254,7 @@ def get_service_avails():
     try:
         # Based on logs, service_availability was not found. Using service_avails.
         # Joining with services table to get service names and prices
-        # VERIFIED SCHEMA: 'created_at' does NOT exist. Use 'availed_at' for ordering.
+        # VERIFIED SCHEMA: 'created_at' and 'status' do NOT exist. Use 'availed_at' for ordering.
         
         user_id = request.args.get('user_id')
         staff_param = request.args.get('staff', 'false').lower() == 'true'
@@ -266,7 +266,6 @@ def get_service_avails():
             # Guest sees only their own
             endpoint = f'service_avails?user_id=eq.{user_id}&select=*,services(name,price)&order=availed_at.desc'
         else:
-            # Fallback for staff if param missing but role is staff (handled in frontend usually)
             endpoint = 'service_avails?select=*,services(name,price)&order=availed_at.desc'
             
         print(f"DEBUG: Service Avails Request: {endpoint}", flush=True)
@@ -281,7 +280,7 @@ def get_service_avails():
                     "id": a.get('id'),
                     "service_id": a.get('service_id'),
                     "user_id": a.get('user_id'),
-                    "status": a.get('status'),
+                    "status": "pending", # Static default as column doesn't exist in DB
                     "notes": a.get('notes'),
                     "availed_at": a.get('availed_at'),
                     "created_at": a.get('availed_at'), # Keep for frontend compatibility
@@ -613,20 +612,25 @@ def avail_service(service_id):
         quantity = int(data.get('quantity', 1))
         
         # VERIFIED SCHEMA FROM SUPABASE SCREENSHOT:
-        # user_id, service_id, booking_id, quantity, total_price, availed_at, status
+        # user_id, service_id, booking_id, quantity, total_price, availed_at
+        # 'status' and 'notes' DO NOT exist in schema.
         insert_data = {
             "service_id": service_id,
             "user_id": user_id,
             "booking_id": data.get('booking_id'), 
             "quantity": quantity,
-            "total_price": service_price * quantity,
-            "status": "pending"
+            "total_price": service_price * quantity
         }
         
         print(f"DEBUG: Recording service request: {insert_data}", flush=True)
         result = supabase_req('service_avails', method='POST', data=insert_data)
         
-        return jsonify({"message": "Service request submitted!", "result": result}), 201
+        # Manually construct response since column mapping is strict
+        res_item = result[0] if isinstance(result, list) and len(result) > 0 else (result if result else insert_data)
+        res_item['status'] = 'pending'
+        res_item['service_name'] = service_res[0].get('name')
+        
+        return jsonify({"message": "Service request submitted!", "result": res_item}), 201
     except Exception as e:
         print(f"Error in avail_service: {str(e)}", flush=True)
         return jsonify({"error": str(e)}), 500
