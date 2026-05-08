@@ -300,6 +300,25 @@ def get_service_avails():
         print(f"Error fetching service avails: {e}", flush=True)
         return jsonify({"error": str(e)}), 500
 
+@app.route('/api/services/avails/<int:avail_id>', methods=['DELETE', 'PATCH'])
+def handle_service_avail_action(avail_id):
+    try:
+        if request.method == 'DELETE':
+            print(f"DEBUG: Deleting service request {avail_id}", flush=True)
+            supabase_req(f'service_avails?id=eq.{avail_id}', method='DELETE')
+            return jsonify({"message": "Service request deleted"}), 200
+            
+        if request.method == 'PATCH':
+            data = request.get_json()
+            # Since 'status' column doesn't exist, this is mostly for frontend state
+            # but we can log it or perform other side effects if needed.
+            print(f"DEBUG: Update action for service request {avail_id}: {data}", flush=True)
+            return jsonify({"message": "Service request updated", "id": avail_id}), 200
+            
+    except Exception as e:
+        print(f"Error in service avail action: {e}", flush=True)
+        return jsonify({"error": str(e)}), 500
+
 import random
 import string
 
