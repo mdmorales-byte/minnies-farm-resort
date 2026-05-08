@@ -591,8 +591,10 @@ createApp({
               room: room?.name || 'Room ' + b.room_id,
               checkIn: b.check_in || b.check_in_date,
               checkOut: b.check_out || b.check_out_date,
-              guests: b.guest_count,
-              total: b.total_price
+              guest_count: b.guest_count || b.num_guests || 1, // Add this
+              total_price: b.total_price || b.total || 0, // Add this
+              guests: b.guest_count || b.num_guests || 1,
+              total: b.total_price || b.total || 0
             };
           });
         } else {
@@ -624,8 +626,10 @@ createApp({
               room: b.room_name || room?.name || 'Room ' + b.room_id,
               checkIn: b.check_in || b.check_in_date, 
               checkOut: b.check_out || b.check_out_date,
-              guests: b.guest_count, 
-              total: b.total_price
+              guest_count: b.guest_count || b.num_guests || 1, // Add this
+              total_price: b.total_price || b.total || 0, // Add this
+              guests: b.guest_count || b.num_guests || 1,
+              total: b.total_price || b.total || 0
             };
           });
         } else {
