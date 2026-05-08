@@ -816,7 +816,6 @@ createApp({
 
       showToast(`Uploading image ${index}... 📤`, 'info');
 
-      // Use FileReader to send as Base64 (More reliable on Vercel)
       const reader = new FileReader();
       reader.readAsDataURL(file);
       reader.onload = async () => {
@@ -843,60 +842,6 @@ createApp({
           showToast('Upload error: ' + err.message, 'error');
         }
       };
-    }
-    async function fetchServices() {
-      try {
-        const isStaff = (currentUser.value && currentUser.value.role === 'staff') ? 'true' : 'false';
-        
-        // Build URL with cache-busting AND explicit params
-        const url = `${API_URL}/services?staff=${isStaff}&_t=${Date.now()}`;
-        
-        console.log('Fetching services from:', url);
-        
-        const res = await fetch(url, {
-          headers: { 
-            'Cache-Control': 'no-cache', 
-            'Pragma': 'no-cache',
-            'Authorization': token.value ? `Bearer ${token.value}` : ''
-          }
-        });
-        
-        if (res.ok) { 
-          const data = await res.json(); 
-          services.value = [...(data.services || [])];
-          console.log(`Services received (${isStaff === 'true' ? 'Staff' : 'Guest'}):`, services.value.length);
-        }
-      } catch (err) { console.error('Fetch services error:', err); }
-    }
-
-    async function fetchServiceAvails() {
-      if (!token.value || !currentUser.value) return;
-      try {
-        const isStaff = currentUser.value.role === 'staff';
-        const url = isStaff
-          ? `${API_URL}/services/avails?staff=true&_t=${Date.now()}`
-          : `${API_URL}/services/avails?user_id=${currentUser.value.id}&_t=${Date.now()}`;
-          
-        console.log('Fetching service avails from:', url);
-        
-        const res = await fetch(url, {
-          headers: { 
-            'Authorization': `Bearer ${token.value}`,
-            'Cache-Control': 'no-cache'
-          }
-        });
-        if (res.ok) { 
-          const data = await res.json(); 
-          serviceAvails.value = data.avails || []; 
-          console.log('Service Avails Received:', serviceAvails.value.length, 'items');
-          if (serviceAvails.value.length > 0) {
-            console.log('Sample service avail:', serviceAvails.value[0]);
-          }
-        } else {
-          const errorData = await res.json();
-          console.error('Fetch service avails failed:', errorData);
-        }
-      } catch (err) { console.error('Fetch service avails error:', err); }
     }
 
     function deleteServiceAvail(id) {
@@ -1128,6 +1073,49 @@ createApp({
       }
     }
 
+    async function fetchServiceAvails() {
+      if (!token.value || !currentUser.value) return;
+      try {
+        const isStaff = currentUser.value.role === 'staff';
+        const url = isStaff
+          ? `${API_URL}/services/avails?staff=true&_t=${Date.now()}`
+          : `${API_URL}/services/avails?user_id=${currentUser.value.id}&_t=${Date.now()}`;
+          
+        console.log('Fetching service avails from:', url);
+        
+        const res = await fetch(url, {
+          headers: { 
+            'Authorization': `Bearer ${token.value}`,
+            'Cache-Control': 'no-cache'
+          }
+        });
+        if (res.ok) { 
+          const data = await res.json(); 
+          serviceAvails.value = data.avails || []; 
+          console.log('Service Avails Received:', serviceAvails.value.length, 'items');
+          if (serviceAvails.value.length > 0) {
+            console.log('Sample service avail:', serviceAvails.value[0]);
+          }
+        } else {
+          const errorData = await res.json();
+          console.error('Fetch service avails failed:', errorData);
+        }
+      } catch (err) { console.error('Fetch service avails error:', err); }
+    }
+
+    // ── REVIEWS ─────────────────────────────────
+    async function fetchReviews(roomId) {
+      try {
+        const res = await fetch(`${API_URL}/reviews?room_id=${roomId}`);
+        if (res.ok) {
+          const data = await res.json();
+          reviews.value = data.reviews || [];
+          reviewsAvg.value = data.average_rating || 0;
+          reviewsTotal.value = data.total_reviews || 0;
+        }
+      } catch (err) { console.error('Fetch reviews error:', err); }
+    }
+
     // ── MOUNT ──────────
     onMounted(async () => {
       await fetchCurrentUser();
@@ -1135,6 +1123,7 @@ createApp({
       if (currentUser.value) {
         if (currentUser.value.role === 'staff') await fetchAllBookings();
         else await fetchUserBookings();
+        await fetchServiceAvails();
       }
     });
 
@@ -1160,7 +1149,7 @@ createApp({
       serviceAvails, fetchServiceAvails, deleteServiceAvail, confirmDeleteServiceAvail,
       showDeleteModal, pendingDeleteId, deleteBooking, confirmDeleteBooking,
       showDeleteBookingModal, pendingDeleteBookingId, updateAvailStatus,
-      updateServiceStock,
+      updateServiceStock, servicesLoading,
       toggleService,
       openAddService,
       editService,
