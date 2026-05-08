@@ -71,8 +71,8 @@ createApp({
 
     // Check URL for reset token on load
     onMounted(() => {
-      const urlParams = new URLSearchParams(window.location.search);
-      const urlResetToken = urlParams.get('reset_token');
+      const uParams = new URLSearchParams(window.location.search);
+      const urlResetToken = uParams.get('reset_token');
       if (urlResetToken) {
         resetToken.value = urlResetToken;
         showResetPassword.value = true;
@@ -82,7 +82,7 @@ createApp({
     });
 
     // Check URL for verify token on load
-    const urlVerifyToken = urlParams.get('verify_token');
+    const urlVerifyToken = uParams.get('verify_token');
     if (urlVerifyToken) {
       fetch(`${API_URL}/auth/verify-email?token=${urlVerifyToken}`)
         .then(res => res.json())
