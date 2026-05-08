@@ -847,23 +847,24 @@ createApp({
     async function fetchServices() {
       try {
         const isStaff = (currentUser.value && currentUser.value.role === 'staff') ? 'true' : 'false';
-        // Clear existing data first to force UI update
-        services.value = [];
-        // Force Vue to re-render by waiting a tick
-        await new Promise(resolve => setTimeout(resolve, 50));
-        // Build URL with cache-busting
-        const params = new URLSearchParams();
-        params.append('staff', isStaff);
-        params.append('_t', Date.now()); // Cache buster
-        const url = `${API_URL}/services?${params.toString()}`;
+        
+        // Build URL with cache-busting AND explicit params
+        const url = `${API_URL}/services?staff=${isStaff}&_t=${Date.now()}`;
+        
+        console.log('Fetching services from:', url);
+        
         const res = await fetch(url, {
-          headers: { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' }
+          headers: { 
+            'Cache-Control': 'no-cache', 
+            'Pragma': 'no-cache',
+            'Authorization': token.value ? `Bearer ${token.value}` : ''
+          }
         });
+        
         if (res.ok) { 
           const data = await res.json(); 
-          services.value = [...(data.services || [])]; // Force new array reference
-          console.log('Services fetched (Staff: ' + isStaff + '):', services.value.length, 'services');
-          console.log('Active services:', services.value.filter(s => s.is_active).length);
+          services.value = [...(data.services || [])];
+          console.log(`Services received (${isStaff === 'true' ? 'Staff' : 'Guest'}):`, services.value.length);
         }
       } catch (err) { console.error('Fetch services error:', err); }
     }
