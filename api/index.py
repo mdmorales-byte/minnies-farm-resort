@@ -237,12 +237,13 @@ def handle_services():
         
         if is_staff:
             # Staff sees everything
-            services = supabase_req('services?select=*')
-            print(f"Staff view - total services: {len(services) if services else 0}")
+            services = supabase_req('services?select=*&order=id.asc')
+            print(f"Staff view - total services: {len(services) if services else 0}", flush=True)
         else:
             # Guests ONLY see active services
-            services = supabase_req('services?is_active=eq.true&select=*')
-            print(f"Public view - active services: {len(services) if services else 0}")
+            # Ensure we filter by is_active=true correctly
+            services = supabase_req('services?is_active=eq.true&select=*&order=id.asc')
+            print(f"Public view - active services: {len(services) if services else 0}", flush=True)
             
         return jsonify({"services": services or []}), 200
     except Exception as e:
@@ -518,10 +519,18 @@ def handle_single_service(service_id):
     try:
         if request.method == 'PUT':
             data = request.get_json()
+            print(f"DEBUG: Updating service {service_id} with data: {data}", flush=True)
+            
             # Ensure we only send valid fields to Supabase
             update_data = {}
             if 'is_active' in data:
-                update_data['is_active'] = data['is_active'] # Keep original boolean
+                # Force strictly to boolean if it's not already
+                val = data['is_active']
+                if isinstance(val, str):
+                    update_data['is_active'] = val.lower() == 'true'
+                else:
+                    update_data['is_active'] = bool(val)
+            
             if 'stock_quantity' in data:
                 update_data['stock_quantity'] = int(data['stock_quantity'])
             if 'price' in data:
@@ -531,6 +540,8 @@ def handle_single_service(service_id):
             if 'description' in data:
                 update_data['description'] = data['description']
                 
+            print(f"DEBUG: Final PATCH data for Supabase: {update_data}", flush=True)
+            
             # Perform the update
             supabase_req(f'services?id=eq.{service_id}', method='PATCH', data=update_data)
             
