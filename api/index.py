@@ -241,30 +241,29 @@ def handle_services():
             print(f"DEBUG: Staff view - total services: {len(services) if services else 0}", flush=True)
         else:
             # Guests ONLY see active services
-            print("DEBUG: Fetching active services for guest...", flush=True)
+            print("DEBUG: Guest view - attempting robust fetch", flush=True)
             
-            # 1. Primary filter (Boolean)
+            # 1. Try standard Boolean filter
             services = supabase_req('services?is_active=eq.true&select=*&order=id.asc')
             
-            # 2. Fallback (Integer/String)
+            # 2. If empty, try Integer filter (1)
             if not services:
                 services = supabase_req('services?is_active=eq.1&select=*&order=id.asc')
             
-            # 3. FINAL FALLBACK: Python-side filtering
+            # 3. FINAL CATCH-ALL: Fetch all and filter in Python
+            # This is the most reliable way if Supabase is being picky about data types
             if not services:
-                all_s = supabase_req('services?select=*&order=id.asc')
-                print(f"DEBUG: Python filtering from {len(all_s) if all_s else 0} total services", flush=True)
-                if all_s:
-                    services = []
-                    for s in all_s:
-                        val = s.get('is_active')
-                        # Check all possible representations of 'True'
-                        if val is True or str(val).lower() in ['true', '1', 't', 'yes']:
-                            services.append(s)
+                print("DEBUG: Standard filters failed, using Python fallback", flush=True)
+                all_services = supabase_req('services?select=*&order=id.asc')
+                if all_services:
+                    services = [
+                        s for s in all_services 
+                        if s.get('is_active') is True 
+                        or str(s.get('is_active')).lower() in ['true', '1', 't', 'yes']
+                    ]
             
-            print(f"DEBUG: Public view - active services found: {len(services) if services else 0}", flush=True)
+            print(f"DEBUG: Guest view - active services found: {len(services) if services else 0}", flush=True)
             
-        # IMPORTANT: Always return an empty list if None to prevent frontend 'Loading' state
         return jsonify({"services": services if services is not None else []}), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
