@@ -187,12 +187,12 @@ createApp({
 
     const upcomingBookings = computed(() => {
       const today = new Date().toISOString().split('T')[0];
-      return allBookings.value.filter(b => b.check_in_date >= today && b.status !== 'cancelled');
+      return allBookings.value.filter(b => (b.check_in || b.check_in_date) >= today && b.status !== 'cancelled');
     });
 
     const pastBookings = computed(() => {
       const today = new Date().toISOString().split('T')[0];
-      return allBookings.value.filter(b => b.check_in_date < today || b.status === 'cancelled' || b.status === 'completed');
+      return allBookings.value.filter(b => (b.check_in || b.check_in_date) < today || b.status === 'cancelled' || b.status === 'completed');
     });
 
     // Finds a completed booking for the selected room that the current user
@@ -550,9 +550,9 @@ createApp({
         lastBooking.value = { 
           ref: data.booking.reference_code, 
           room: selectedRoom.value.name, 
-          checkIn: data.booking.check_in_date, 
-          checkOut: data.booking.check_out_date, 
-          guests: data.booking.num_guests, 
+          checkIn: data.booking.check_in || data.booking.check_in_date, 
+          checkOut: data.booking.check_out || data.booking.check_out_date, 
+          guests: data.booking.guest_count || data.booking.num_guests, 
           total: data.booking.total_price 
         };
         await fetchUserBookings();
@@ -589,8 +589,8 @@ createApp({
               guestName: currentUser.value.name,
               emoji: room?.emoji || '🏠',
               room: room?.name || 'Room ' + b.room_id,
-              checkIn: b.check_in_date,
-              checkOut: b.check_out_date,
+              checkIn: b.check_in || b.check_in_date,
+              checkOut: b.check_out || b.check_out_date,
               guests: b.guest_count,
               total: b.total_price
             };
@@ -622,8 +622,8 @@ createApp({
               ...b, 
               guestName: b.guest_name || 'Guest ' + b.user_id, 
               room: b.room_name || room?.name || 'Room ' + b.room_id,
-              checkIn: b.check_in_date, 
-              checkOut: b.check_out_date,
+              checkIn: b.check_in || b.check_in_date, 
+              checkOut: b.check_out || b.check_out_date,
               guests: b.guest_count, 
               total: b.total_price
             };

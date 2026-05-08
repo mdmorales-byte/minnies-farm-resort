@@ -317,12 +317,12 @@ def handle_bookings():
                 return jsonify({"error": "User session expired or not found"}), 401
 
             # VERIFIED SCHEMA FROM SUPABASE SCREENSHOT:
-            # check_in_date, check_out_date, total_price, status, guest_count
+            # check_in, check_out, total_price, status, guest_count
             booking_data = {
                 "user_id": user_id,
                 "room_id": room_id,
-                "check_in_date": data['check_in_date'],
-                "check_out_date": data['check_out_date'],
+                "check_in": data.get('check_in_date') or data.get('check_in'),
+                "check_out": data.get('check_out_date') or data.get('check_out'),
                 "guest_count": int(data.get('num_guests', 1)),
                 "total_price": total_price,
                 "status": "confirmed",
