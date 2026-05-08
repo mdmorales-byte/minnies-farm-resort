@@ -241,26 +241,31 @@ def handle_services():
             print(f"DEBUG: Staff view - total services: {len(services) if services else 0}", flush=True)
         else:
             # Guests ONLY see active services
-            # Try a broader query first to see what's in the DB
             print("DEBUG: Fetching active services for guest...", flush=True)
             
-            # Use multiple filter attempts for maximum compatibility
+            # 1. Primary filter (Boolean)
             services = supabase_req('services?is_active=eq.true&select=*&order=id.asc')
             
-            # If nothing found, try literal string 'true' or 1 as fallbacks
+            # 2. Fallback (Integer/String)
             if not services:
                 services = supabase_req('services?is_active=eq.1&select=*&order=id.asc')
             
-            # FINAL FALLBACK: If still nothing, fetch all and filter in Python
-            # This is the "safe" way to ensure we never get a stuck loading screen
+            # 3. FINAL FALLBACK: Python-side filtering
             if not services:
                 all_s = supabase_req('services?select=*&order=id.asc')
+                print(f"DEBUG: Python filtering from {len(all_s) if all_s else 0} total services", flush=True)
                 if all_s:
-                    services = [s for s in all_s if str(s.get('is_active')).lower() in ['true', '1', 't']]
+                    services = []
+                    for s in all_s:
+                        val = s.get('is_active')
+                        # Check all possible representations of 'True'
+                        if val is True or str(val).lower() in ['true', '1', 't', 'yes']:
+                            services.append(s)
             
             print(f"DEBUG: Public view - active services found: {len(services) if services else 0}", flush=True)
             
-        return jsonify({"services": services or []}), 200
+        # IMPORTANT: Always return an empty list if None to prevent frontend 'Loading' state
+        return jsonify({"services": services if services is not None else []}), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
