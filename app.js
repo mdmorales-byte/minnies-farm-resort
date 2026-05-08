@@ -10,9 +10,19 @@ createApp({
     const authTab = ref('login');
     const dashTab = ref('upcoming');
 
+    // Safe token retrieval
+    let savedToken = '';
+    try {
+      savedToken = localStorage.getItem('token') || '';
+    } catch (e) {
+      console.warn("Storage access blocked by browser privacy settings.");
+    }
+    const token = ref(savedToken);
+    const currentUser = ref(null);
+
     const authMsg = ref('');
     const authMsgType = ref('');
-    const authMsgKey = ref(0);  // For animation re-trigger
+    const authMsgKey = ref(0);
     const showRoomModal = ref(false);
     const editingRoom = ref(null);
     const loading = ref(false);
@@ -35,9 +45,6 @@ createApp({
     const mobileMenuOpen = ref(false);
 
     const today = new Date().toISOString().split('T')[0];
-
-    const currentUser = ref(null);
-    const token = ref(localStorage.getItem('token') || '');
 
     const loginForm = ref({ email: '', password: '' });
     const regForm = ref({ name: '', email: '', password: '', confirm: '', role: 'guest' });
