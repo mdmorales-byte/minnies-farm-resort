@@ -872,17 +872,29 @@ createApp({
     async function fetchServiceAvails() {
       if (!token.value || !currentUser.value) return;
       try {
-        const url = currentUser.value.role === 'staff' 
-          ? `${API_URL}/services/avails?_t=${Date.now()}`
+        const isStaff = currentUser.value.role === 'staff';
+        const url = isStaff
+          ? `${API_URL}/services/avails?staff=true&_t=${Date.now()}`
           : `${API_URL}/services/avails?user_id=${currentUser.value.id}&_t=${Date.now()}`;
           
+        console.log('Fetching service avails from:', url);
+        
         const res = await fetch(url, {
-          headers: { 'Authorization': `Bearer ${token.value}` }
+          headers: { 
+            'Authorization': `Bearer ${token.value}`,
+            'Cache-Control': 'no-cache'
+          }
         });
         if (res.ok) { 
           const data = await res.json(); 
           serviceAvails.value = data.avails || []; 
-          console.log('Service Avails Received:', serviceAvails.value);
+          console.log('Service Avails Received:', serviceAvails.value.length, 'items');
+          if (serviceAvails.value.length > 0) {
+            console.log('Sample service avail:', serviceAvails.value[0]);
+          }
+        } else {
+          const errorData = await res.json();
+          console.error('Fetch service avails failed:', errorData);
         }
       } catch (err) { console.error('Fetch service avails error:', err); }
     }
