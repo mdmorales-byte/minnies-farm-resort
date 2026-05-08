@@ -70,14 +70,16 @@ createApp({
     const resetToken = ref('');
 
     // Check URL for reset token on load
-    const urlParams = new URLSearchParams(window.location.search);
-    const urlResetToken = urlParams.get('reset_token');
-    if (urlResetToken) {
-      resetToken.value = urlResetToken;
-      showResetPassword.value = true;
-      // Clean URL after capturing token
-      window.history.replaceState({}, document.title, window.location.pathname);
-    }
+    onMounted(() => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const urlResetToken = urlParams.get('reset_token');
+      if (urlResetToken) {
+        resetToken.value = urlResetToken;
+        showResetPassword.value = true;
+        // Clean URL after capturing token
+        window.history.replaceState({}, document.title, window.location.pathname);
+      }
+    });
 
     // Check URL for verify token on load
     const urlVerifyToken = urlParams.get('verify_token');
