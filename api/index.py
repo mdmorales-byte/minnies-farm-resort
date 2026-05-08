@@ -321,9 +321,9 @@ def handle_bookings():
             booking_data = {
                 "user_id": user_id,
                 "room_id": room_id,
-                "check_in": data.get('check_in_date') or data.get('check_in'),
-                "check_out": data.get('check_out_date') or data.get('check_out'),
-                "guest_count": int(data.get('num_guests', 1)),
+                "check_in": data.get('check_in_date') or data.get('checkIn') or data.get('check_in'),
+                "check_out": data.get('check_out_date') or data.get('checkOut') or data.get('check_out'),
+                "guest_count": int(data.get('num_guests') or data.get('guest_count') or data.get('guests') or 1),
                 "total_price": total_price,
                 "status": "confirmed",
                 "reference_code": generate_ref()
