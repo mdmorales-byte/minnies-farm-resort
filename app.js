@@ -82,6 +82,14 @@ createApp({
     const hasProcessedToken = ref(false);
 
     onMounted(() => {
+      // ABSOLUTE UI RESET: Kill all popups immediately
+      showResetPassword.value = false;
+      showForgotPassword.value = false;
+      showRoomModal.value = false;
+      showServiceAdminModal.value = false;
+      showServiceModal.value = false;
+      resetToken.value = '';
+
       // 1. COMPLETELY PURGE STATE
       showResetPassword.value = false;
       resetToken.value = '';
