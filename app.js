@@ -80,7 +80,9 @@ createApp({
     const hasProcessedToken = ref(false);
 
     onMounted(() => {
-      // 1. Check for reset token
+      // NUCLEAR OPTION: Clear any stuck session state
+      showResetPassword.value = false;
+      
       const uParams = new URLSearchParams(window.location.search);
       const urlResetToken = uParams.get('reset_token');
       
