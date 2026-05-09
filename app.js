@@ -80,8 +80,7 @@ createApp({
     const hasProcessedToken = ref(false);
 
     onMounted(() => {
-      if (hasProcessedToken.value) return;
-
+      // 1. Check for reset token
       const uParams = new URLSearchParams(window.location.search);
       const urlResetToken = uParams.get('reset_token');
       
@@ -93,8 +92,19 @@ createApp({
         // DESTROY the token from URL immediately
         const cleanUrl = window.location.origin + window.location.pathname;
         window.history.replaceState({}, document.title, cleanUrl);
-        
         console.log("Emergency: Reset token captured and URL purged.");
+      } else {
+        // FORCE CLOSE if no token is present
+        showResetPassword.value = false;
+        console.log("Security: No reset token found, forcing modal closed.");
+      }
+
+      // 2. Fetch Services on mount
+      fetchServices();
+      
+      // 3. Fetch current user if token exists
+      if (token.value) {
+        fetchCurrentUser();
       }
     });
 
