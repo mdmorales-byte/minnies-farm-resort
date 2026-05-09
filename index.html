@@ -780,17 +780,8 @@
     </div>
   </div>
 
-  <div v-if="showResetPassword" class="modal-overlay" @click.self="showResetPassword=false">
-    <div class="modal" style="max-width:400px">
-      <button class="modal-close" @click="showResetPassword=false">✕</button>
-      <h3>Create New Password</h3>
-      <p style="color:var(--muted);font-size:0.9rem;margin-bottom:1.5rem">Enter your new password below.</p>
-      <div v-if="resetMsg" :class="'auth-status '+resetMsgType" style="margin-bottom:1rem">{{ resetMsg }}</div>
-      <div class="form-group"><label>New Password</label><input type="password" v-model="resetPassword" placeholder="••••••••" /></div>
-      <div class="form-group"><label>Confirm Password</label><input type="password" v-model="resetPasswordConfirm" placeholder="••••••••" /></div>
-      <div style="margin-top:1.5rem"><button class="btn btn-teal" style="width:100%" @click="doResetPassword">Reset Password</button></div>
-    </div>
-  </div>
+  <!-- PASSWORD MODAL REMOVED FOR EMERGENCY SYSTEM RECOVERY -->
+
 
   <!-- ABOUT US -->
   <div v-if="page==='about'" class="page">
