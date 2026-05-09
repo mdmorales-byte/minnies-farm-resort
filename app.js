@@ -69,6 +69,8 @@ createApp({
     const forgotEmail = ref('');
     const forgotMsg = ref('');
     const forgotMsgType = ref('');
+
+    // THE GLOBAL KILL-SWITCH
     const showResetPassword = ref(false);
     const resetPassword = ref('');
     const resetPasswordConfirm = ref('');
@@ -80,30 +82,31 @@ createApp({
     const hasProcessedToken = ref(false);
 
     onMounted(() => {
-      // NUCLEAR OPTION: Clear any stuck session state
+      // 1. COMPLETELY PURGE STATE
       showResetPassword.value = false;
-      
+      resetToken.value = '';
+
       const uParams = new URLSearchParams(window.location.search);
       const urlResetToken = uParams.get('reset_token');
-      
+
       if (urlResetToken && !hasProcessedToken.value) {
+        console.log("Valid Reset Token Found. Opening Modal.");
         resetToken.value = urlResetToken;
         showResetPassword.value = true;
         hasProcessedToken.value = true;
-        
-        // DESTROY the token from URL immediately
+
         const cleanUrl = window.location.origin + window.location.pathname;
         window.history.replaceState({}, document.title, cleanUrl);
-        console.log("Emergency: Reset token captured and URL purged.");
       } else {
-        // FORCE CLOSE if no token is present
+        // FORCE EVERYTHING CLOSED
         showResetPassword.value = false;
-        console.log("Security: No reset token found, forcing modal closed.");
+        resetToken.value = '';
+        console.log("Global Kill-Switch: Modal Forced Closed.");
       }
 
       // 2. Fetch Services on mount
       fetchServices();
-      
+
       // 3. Fetch current user if token exists
       if (token.value) {
         fetchCurrentUser();
