@@ -357,17 +357,19 @@ def handle_service_avail_action(avail_id):
         if request.method == 'PATCH':
             data = request.get_json()
             status = (data or {}).get('status')
-            update_data = {}
-            if status:
-                update_data['status'] = status
-
-            if update_data:
+            # The verified Supabase schema for service_avails often does NOT include a
+            # 'status' column. To support staff actions (Confirm/Complete/Cancel)
+            # without schema changes, treat PATCH as an action that removes the
+            # request from the pending queue.
+            if status in ('confirmed', 'completed', 'cancelled'):
                 try:
-                    supabase_req(f'service_avails?id=eq.{avail_id}', method='PATCH', data=update_data)
+                    supabase_req(f'service_avails?id=eq.{avail_id}', method='DELETE')
+                    return jsonify({"message": f"Service request {status}", "id": avail_id, "status": status}), 200
                 except Exception as e:
-                    print(f"DEBUG: PATCH service_avails failed: {e}", flush=True)
+                    print(f"DEBUG: Action DELETE service_avails failed: {e}", flush=True)
+                    return jsonify({"error": "Failed to update service request."}), 500
 
-            return jsonify({"message": "Service request updated", "id": avail_id, "status": status}), 200
+            return jsonify({"message": "No changes applied", "id": avail_id, "status": status}), 200
             
     except Exception as e:
         print(f"Error in service avail action: {e}", flush=True)
