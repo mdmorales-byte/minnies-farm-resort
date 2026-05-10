@@ -695,10 +695,27 @@ def handle_reviews():
             return jsonify({"message": "Review added", "review": inserted}), 201
             
         room_id = request.args.get('room_id')
-        endpoint = 'reviews?select=*,users(name)&order=created_at.desc'
-        if room_id:
-            endpoint += f'&room_id=eq.{room_id}'
-        rows = supabase_req(endpoint) or []
+        endpoints_to_try = []
+        endpoints_to_try.append('reviews?select=*,users(name)&order=created_at.desc')
+        endpoints_to_try.append('reviews?select=*&order=created_at.desc')
+        endpoints_to_try.append('reviews?select=*')
+
+        rows = []
+        last_err = None
+        for base in endpoints_to_try:
+            endpoint = base
+            if room_id:
+                endpoint += f'&room_id=eq.{room_id}'
+            try:
+                rows = supabase_req(endpoint) or []
+                last_err = None
+                break
+            except Exception as e:
+                last_err = e
+                rows = []
+
+        if last_err is not None:
+            print(f"Error fetching reviews after fallbacks: {last_err}", flush=True)
 
         formatted = []
         total = 0
@@ -709,12 +726,15 @@ def handle_reviews():
                 rating_num = float(rating_val) if rating_val is not None else 0
             except Exception:
                 rating_num = 0
-            if rating_num:
-                sum_rating += rating_num
-                total += 1
+            sum_rating += rating_num
+            total += 1
 
             user_info = r.get('users', {})
-            guest_name = user_info.get('name') if isinstance(user_info, dict) else None
+            guest_name = None
+            if isinstance(user_info, dict):
+                guest_name = user_info.get('name')
+            elif isinstance(user_info, list) and user_info:
+                guest_name = (user_info[0] or {}).get('name')
 
             formatted.append({
                 **r,
