@@ -650,14 +650,15 @@
       justify-content: center;
       z-index: 2000;
     }
-    /* ── PAGE ROUTING ── */
-    [v-cloak] { display: none !important; }
-    
+    /* ── PAGE ROUTING (Restored for maximum compatibility) ── */
     .page {
       min-height: 80vh;
-      animation: fadeIn 0.4s ease;
-      display: block; /* Ensure pages can be seen */
+      display: block !important; /* Force visibility even if Vue fails */
+      opacity: 1 !important;
+      visibility: visible !important;
     }
+
+    [v-cloak] { display: none; }
 
     .modal {
       background: var(--white);
