@@ -184,6 +184,40 @@ def login():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+
+@app.route('/api/auth/register', methods=['POST'])
+def register():
+    try:
+        data = request.get_json() or {}
+        name = (data.get('name') or '').strip()
+        email = (data.get('email') or '').strip().lower()
+        password = data.get('password')
+
+        if not name or not email or not password:
+            return jsonify({"error": "'name', 'email', and 'password' are required."}), 400
+
+        # check existing
+        existing = supabase_req(f'users?email=eq.{email}&select=id&limit=1')
+        if existing:
+            return jsonify({"error": "Email is already registered."}), 409
+
+        hashed_pw = pbkdf2_sha256.hash(password)
+        user_data = {
+            'name': name,
+            'email': email,
+            'password': hashed_pw,
+            'role': 'guest',
+            'is_verified': True
+        }
+
+        created = supabase_req('users', method='POST', data=user_data)
+        user = created[0] if isinstance(created, list) and created else user_data
+        user.pop('password', None)
+
+        return jsonify({"message": "Account created! You can now sign in.", "user": user}), 201
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 @app.route('/api/auth/google', methods=['POST'])
 def google_login():
     try:
