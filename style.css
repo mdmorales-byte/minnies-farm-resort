@@ -656,6 +656,7 @@
     .page {
       min-height: 80vh;
       animation: fadeIn 0.4s ease;
+      display: block; /* Ensure pages are visible by default */
     }
 
     .modal {
