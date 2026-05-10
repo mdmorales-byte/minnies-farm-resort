@@ -55,7 +55,7 @@ def get_bookings():
 
 
 # ── GET SINGLE BOOKING ────────────────────────────────────────────────────────
-@bookings_bp.route("/<int:booking_id>", methods=["GET"])
+@bookings_bp.route("/<booking_id>", methods=["GET"])
 @jwt_required()
 def get_booking(booking_id):
     user_id = get_jwt_identity()
@@ -139,7 +139,7 @@ def create_booking():
 
 
 # ── UPDATE BOOKING (change dates) ─────────────────────────────────────────────
-@bookings_bp.route("/<int:booking_id>", methods=["PUT"])
+@bookings_bp.route("/<booking_id>", methods=["PUT"])
 @jwt_required()
 def update_booking(booking_id):
     user_id = get_jwt_identity()
@@ -190,7 +190,7 @@ def update_booking(booking_id):
 
 
 # ── DELETE / CANCEL BOOKING ───────────────────────────────────────────────────
-@bookings_bp.route("/<int:booking_id>", methods=["DELETE"])
+@bookings_bp.route("/<booking_id>", methods=["DELETE"])
 @jwt_required()
 def cancel_booking(booking_id):
     user_id = get_jwt_identity()
@@ -222,7 +222,7 @@ def cancel_booking(booking_id):
 
 
 # ── UPDATE BOOKING STATUS (staff only) ───────────────────────────────────────
-@bookings_bp.route("/<int:booking_id>/status", methods=["PUT"])
+@bookings_bp.route("/<booking_id>/status", methods=["PUT"])
 @jwt_required()
 def update_booking_status(booking_id):
     user_id = get_jwt_identity()

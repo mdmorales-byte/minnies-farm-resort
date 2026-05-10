@@ -652,8 +652,23 @@ const __app = createApp({
           headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${t}` },
           body: JSON.stringify({ status })
         });
-        if (res.ok) await fetchAllBookings();
-        else { const data = await res.json(); alert(data.error || 'Error updating status'); }
+        if (res.ok) {
+          await fetchAllBookings();
+          return;
+        }
+
+        const contentType = res.headers.get('content-type') || '';
+        const bodyText = await res.text();
+        if (contentType.includes('application/json')) {
+          try {
+            const data = JSON.parse(bodyText || '{}');
+            alert(data.error || data.message || 'Error updating status');
+          } catch {
+            alert('Error updating status');
+          }
+        } else {
+          alert(`Error updating status (HTTP ${res.status}). Please refresh and try again.`);
+        }
       } catch (e) { alert('Error: ' + e.message); }
     }
 
