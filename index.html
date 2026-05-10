@@ -78,7 +78,7 @@
 </style>
 </head>
 <body>
-<div id="app">
+<div id="app" v-cloak>
   <!-- TOAST NOTIFICATIONS -->
   <div class="toast-container">
     <div v-for="(toast, idx) in toasts" :key="idx" :class="['toast', toast.type, {removing: toast.removing}]">

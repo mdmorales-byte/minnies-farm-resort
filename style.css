@@ -78,7 +78,6 @@
     }
 
     /* ── PAGE WRAPPER ── */
-    .page { animation: fadeIn 0.4s ease; }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
     /* ── HERO ── */
@@ -88,6 +87,9 @@
       text-align: center;
       position: relative;
       overflow: hidden;
+      width: 100%;
+      box-sizing: border-box;
+      margin: 0;
     }
     .hero::before {
       content: '';
@@ -144,7 +146,13 @@
     .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none !important; }
 
     /* ── CONTAINER ── */
-    .container { max-width: 1200px; margin: 0 auto; padding: 2.5rem 1.5rem; }
+    .container { 
+      max-width: 1200px; 
+      margin: 0 auto; 
+      padding: 2.5rem 1.5rem;
+      width: 100%;
+      box-sizing: border-box;
+    }
     .section-title {
       font-family: 'Cormorant Garamond', serif;
       font-size: 2rem;
@@ -386,6 +394,9 @@
       justify-content: center;
       padding: 2rem;
       background: linear-gradient(160deg, var(--deep) 0%, #2d5a50 100%);
+      width: 100%;
+      box-sizing: border-box;
+      margin: 0;
     }
     .auth-card {
       background: var(--white);
@@ -458,7 +469,13 @@
     }
 
     /* ── DASHBOARD ── */
-    .dashboard-layout { display: grid; grid-template-columns: 260px 1fr; gap: 2rem; align-items: start; }
+    .dashboard-layout { 
+      display: grid; 
+      grid-template-columns: 260px 1fr; 
+      gap: 2rem; 
+      align-items: start;
+      width: 100%;
+    }
     @media(max-width: 768px) { .dashboard-layout { grid-template-columns: 1fr; } }
     .sidebar {
       background: var(--deep);
@@ -467,6 +484,8 @@
       color: var(--white);
       position: sticky;
       top: 84px;
+      z-index: 10;
+      width: 100%;
     }
     .sidebar-avatar {
       width: 64px; height: 64px;
@@ -654,8 +673,12 @@
     [v-cloak] { display: none !important; }
     
     .page {
+      display: block;
       min-height: 80vh;
       animation: fadeIn 0.4s ease;
+      position: relative;
+      width: 100%;
+      overflow-x: hidden;
     }
 
     .modal {
@@ -678,6 +701,9 @@
       text-align: center;
       position: relative;
       overflow: hidden;
+      width: 100%;
+      box-sizing: border-box;
+      margin: 0;
     }
     .about-hero::before {
       content: '';
@@ -784,6 +810,9 @@
       text-align: center;
       position: relative;
       overflow: hidden;
+      width: 100%;
+      box-sizing: border-box;
+      margin: 0;
     }
     .services-hero::before {
       content: '';
