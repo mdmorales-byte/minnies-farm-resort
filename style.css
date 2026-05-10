@@ -651,10 +651,12 @@
       z-index: 2000;
     }
     /* ── PAGE ROUTING ── */
-    [v-cloak] { display: none; }
+    [v-cloak] { display: none !important; }
+    
     .page {
       min-height: 80vh;
       animation: fadeIn 0.4s ease;
+      display: block; /* Ensure pages can be seen */
     }
     .modal-overlay[style*="display: flex"],
     .modal-overlay:not([style*="display: none"]) {
