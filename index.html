@@ -184,7 +184,7 @@
   </div>
 
   <!-- ROOMS LIST -->
-  <div v-if="page==='rooms'" class="page">
+  <div v-if="page==='rooms'" class="page" v-cloak>
     <div class="container">
       <div class="section-title">Available Rooms</div>
       <div class="section-sub">{{ filteredRooms.length }} rooms found</div>
@@ -362,7 +362,7 @@
   </div>
 
   <!-- SERVICES -->
-  <div v-if="page==='services'" class="page">
+  <div v-if="page==='services'" class="page" v-cloak>
     <div class="services-hero">
       <div class="hero-eyebrow">What We Offer</div>
       <h1>Resort <em>Services</em></h1>
@@ -416,7 +416,7 @@
 
 
   <!-- GUEST DASHBOARD -->
-  <div v-if="page==='dashboard' && currentUser && currentUser.role==='guest'" class="page">
+  <div v-if="page==='dashboard' && currentUser && currentUser.role==='guest'" class="page" v-cloak>
     <div class="container">
       <div class="section-title">My Dashboard</div>
       <div class="section-sub">Manage your reservations</div>
@@ -482,7 +482,7 @@
   </div>
 
   <!-- STAFF DASHBOARD -->
-  <div v-if="page==='dashboard' && currentUser && currentUser.role==='staff'" class="page">
+  <div v-if="page==='dashboard' && currentUser && currentUser.role==='staff'" class="page" v-cloak>
     <div class="container">
       <div class="dashboard-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem;">
         <div class="section-title" style="margin-bottom:0">Staff Dashboard</div>
@@ -755,7 +755,7 @@
 
 
   <!-- ABOUT US -->
-  <div v-if="page==='about'" class="page">
+  <div v-if="page==='about'" class="page" v-cloak>
     <div class="about-hero">
       <div class="hero-eyebrow">Our Story</div>
       <h1>Welcome to<br><em>Minnie's Farm Resort</em></h1>
