@@ -656,18 +656,6 @@
     .page {
       min-height: 80vh;
       animation: fadeIn 0.4s ease;
-      display: none; /* Keep hidden by default */
-    }
-
-    /* Force show ONLY when Vue explicitly sets display block */
-    .page[style*="display: block"] {
-       display: block !important;
-    }
-    .page[style*="display: flex"] {
-       display: flex !important;
-    }
-    .page[style*="display: grid"] {
-       display: grid !important;
     }
 
     .modal {
