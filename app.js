@@ -418,34 +418,6 @@ const __app = createApp({
       loading.value = false;
     }
 
-    // DEBUG: Auto staff login bypass
-    async function debugLogin() {
-      loading.value = true;
-      try {
-        const res = await fetch(`${API_URL}/auth/debug-login`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' }
-        });
-        const data = await res.json();
-        if (!res.ok) {
-          authMsg.value = data.error || 'Debug login failed';
-          authMsgType.value = 'error';
-          return;
-        }
-        token.value = data.token;
-        localStorage.setItem('token', data.token);
-        currentUser.value = data.user;
-        authMsg.value = '✅ DEBUG: Logged in as Staff!';
-        authMsgType.value = 'success';
-        showToast('DEBUG: Staff access granted! 🎉', 'success', 3000);
-        setTimeout(() => navigate('dashboard'), 800);
-      } catch (err) {
-        authMsg.value = 'Debug login error: ' + err.message;
-        authMsgType.value = 'error';
-      }
-      loading.value = false;
-    }
-
     async function doRegister() {
       if (!regForm.value.name || !regForm.value.email || !regForm.value.password) {
         authMsg.value = 'Please fill in all fields.'; 
@@ -1179,7 +1151,7 @@ const __app = createApp({
       today, currentUser, token, loginForm, regForm, showLoginPw, showRegPw, showRegConfirmPw, rooms, filters, selectedRoom,
       bookingForm, roomForm, lastBooking, allBookings, features, teamMembers, faqs,
       filteredRooms, bookingNights, bookingTotal, upcomingBookings, pastBookings,
-      navigate, doLogin, debugLogin, doRegister, logout, googleLogin, doForgotPassword, doResetPassword,
+      navigate, doLogin, doRegister, logout, googleLogin, doForgotPassword, doResetPassword,
       showForgotPassword, forgotEmail, forgotMsg, forgotMsgType,
       showResetPassword, resetPassword, resetPasswordConfirm, resetMsg, resetMsgType, resetFilters, fetchRooms, fetchCurrentUser,
       fetchUserBookings, viewRoom, doBook, cancelBooking, openAddRoom, editRoom, saveRoom,
@@ -1213,15 +1185,7 @@ const __app = createApp({
   }
 });
 
-// ── BOOTSTRAP / DIAGNOSTICS ─────────────────────────────────────────────
-window.__APP_BOOT_OK__ = false;
-try {
-  __app.mount('#app');
-  window.__APP_BOOT_OK__ = true;
-  console.log('Vue mounted successfully.');
-} catch (e) {
-  console.error('Vue failed to mount:', e);
-}
+__app.mount('#app');
 
 window.addEventListener('error', function(e) { console.error('JavaScript error:', e.error); });
 window.addEventListener('unhandledrejection', function(e) { console.error('Unhandled promise rejection:', e.reason); });
