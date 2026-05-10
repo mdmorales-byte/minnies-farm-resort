@@ -4,7 +4,7 @@ const API_URL = window.location.hostname === 'localhost' || window.location.host
   ? 'http://127.0.0.1:5000/api'
   : '/api';
 
-createApp({
+const __app = createApp({
   setup() {
     const page = ref('home');
     const authTab = ref('login');
@@ -81,7 +81,7 @@ createApp({
     // Emergency Kill-Switch for Reset Modal
     const hasProcessedToken = ref(false);
 
-    onMounted(() => {
+    onMounted(async () => {
       // ABSOLUTE UI RESET: Kill all popups immediately
       showResetPassword.value = false;
       showForgotPassword.value = false;
@@ -112,12 +112,20 @@ createApp({
         console.log("Global Kill-Switch: Modal Forced Closed.");
       }
 
-      // 2. Fetch Services on mount
-      fetchServices();
-
-      // 3. Fetch current user if token exists
-      if (token.value) {
-        fetchCurrentUser();
+      // Initial data bootstrap
+      try {
+        await fetchServices();
+        if (token.value) {
+          await fetchCurrentUser();
+        }
+        await fetchRooms();
+        if (currentUser.value) {
+          if (currentUser.value.role === 'staff') await fetchAllBookings();
+          else await fetchUserBookings();
+          await fetchServiceAvails();
+        }
+      } catch (e) {
+        console.error('Bootstrap error:', e);
       }
     });
 
@@ -1159,17 +1167,6 @@ createApp({
       } catch (err) { console.error('Fetch service avails error:', err); }
     }
 
-    // ── MOUNT ──────────
-    onMounted(async () => {
-      await fetchCurrentUser();
-      await fetchRooms();
-      if (currentUser.value) {
-        if (currentUser.value.role === 'staff') await fetchAllBookings();
-        else await fetchUserBookings();
-        await fetchServiceAvails();
-      }
-    });
-
     // ── WATCH staffTab ──────────
     watch(staffTab, (newTab) => {
       if (newTab === 'rooms') { rooms.value = []; fetchRooms(); }
@@ -1214,7 +1211,17 @@ createApp({
       eligibleBooking, submitReview,
     };
   }
-}).mount('#app');
+});
+
+// ── BOOTSTRAP / DIAGNOSTICS ─────────────────────────────────────────────
+window.__APP_BOOT_OK__ = false;
+try {
+  __app.mount('#app');
+  window.__APP_BOOT_OK__ = true;
+  console.log('Vue mounted successfully.');
+} catch (e) {
+  console.error('Vue failed to mount:', e);
+}
 
 window.addEventListener('error', function(e) { console.error('JavaScript error:', e.error); });
 window.addEventListener('unhandledrejection', function(e) { console.error('Unhandled promise rejection:', e.reason); });
