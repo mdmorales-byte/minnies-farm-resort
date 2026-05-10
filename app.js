@@ -15,7 +15,6 @@ const __app = createApp({
     try {
       savedToken = localStorage.getItem('token') || '';
     } catch (e) {
-      console.warn("Storage access blocked by browser privacy settings.");
     }
     const token = ref(savedToken);
     const currentUser = ref(null);
@@ -98,7 +97,6 @@ const __app = createApp({
       const urlResetToken = uParams.get('reset_token');
 
       if (urlResetToken && !hasProcessedToken.value) {
-        console.log("Valid Reset Token Found. Opening Modal.");
         resetToken.value = urlResetToken;
         showResetPassword.value = true;
         hasProcessedToken.value = true;
@@ -109,7 +107,6 @@ const __app = createApp({
         // FORCE EVERYTHING CLOSED
         showResetPassword.value = false;
         resetToken.value = '';
-        console.log("Global Kill-Switch: Modal Forced Closed.");
       }
 
       // Initial data bootstrap
@@ -512,7 +509,6 @@ const __app = createApp({
         if (res.ok) {
           const data = await res.json();
           rooms.value = [...(data.rooms || [])]; // Force new array reference
-          console.log('Rooms fetched:', rooms.value.length, 'rooms');
           rooms.value.forEach(r => {
             if (!r.emoji) {
               const emojis = { 'Standard': '👤', 'Themed': '🎈', 'Deluxe': '👥', 'Suite': '🏠' };
@@ -573,7 +569,6 @@ const __app = createApp({
     async function fetchUserBookings() {
       if (!token.value || !currentUser.value) return;
       try {
-        console.log('Fetching bookings for user:', currentUser.value.id);
         const res = await fetch(`${API_URL}/bookings?user_id=${currentUser.value.id}&_t=${Date.now()}`, { 
           headers: { 
             'Authorization': `Bearer ${token.value}`,
@@ -583,11 +578,6 @@ const __app = createApp({
         });
         if (res.ok) {
           const data = await res.json();
-          console.log('User Bookings Received:', data.bookings);
-          
-          if (!data.bookings || data.bookings.length === 0) {
-            console.warn('No bookings returned for user:', currentUser.value.id);
-          }
 
           allBookings.value = (data.bookings || []).map(b => {
             const room = rooms.value.find(r => r.id === b.room_id);
@@ -613,7 +603,6 @@ const __app = createApp({
 
     async function fetchAllBookings() {
       try {
-        console.log('Fetching all bookings (Staff)');
         const res = await fetch(`${API_URL}/bookings?staff=true&_t=${Date.now()}`, { 
           headers: { 
             'Authorization': `Bearer ${token.value || localStorage.getItem('token')}`,
@@ -623,7 +612,6 @@ const __app = createApp({
         });
         if (res.ok) {
           const data = await res.json();
-          console.log('All Bookings Received (Staff):', data.bookings);
           
           allBookings.value = (data.bookings || []).map(b => {
             const room = rooms.value.find(r => r.id === b.room_id);
@@ -774,7 +762,6 @@ const __app = createApp({
         });
         if (res.ok) { 
           const data = await res.json();
-          console.log('Room saved response:', data);
           await fetchRooms(); 
           showRoomModal.value = false;
           showToast(editingRoom.value ? 'Room updated! 🏠' : 'Room created! 🏠', 'success');
@@ -999,29 +986,6 @@ const __app = createApp({
     }
 
     async function saveService() {
-      if (!serviceForm.value.name || serviceForm.value.price === '') return;
-      loading.value = true;
-      try {
-        const method = editingService.value ? 'PUT' : 'POST';
-        const url = editingService.value ? `${API_URL}/services/${editingService.value.id}` : `${API_URL}/services`;
-        const res = await fetch(url, {
-          method,
-          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token.value}` },
-          body: JSON.stringify(serviceForm.value)
-        });
-        if (res.ok) { 
-          const data = await res.json();
-          console.log('Service saved response:', data);
-          await fetchServices(); 
-          showServiceAdminModal.value = false;
-          showToast(editingService.value ? 'Service updated! ✅' : 'Service created! ✅', 'success');
-        } else { 
-          const data = await res.json(); 
-          console.error('Service save error:', data);
-          showToast(data.error || 'Error saving service', 'error'); 
-        }
-      } catch (err) { showToast('Connection error.', 'error'); }
-      loading.value = false;
     }
 
     function deleteService(s) {
@@ -1116,8 +1080,6 @@ const __app = createApp({
         const url = isStaff
           ? `${API_URL}/services/avails?staff=true&_t=${Date.now()}`
           : `${API_URL}/services/avails?user_id=${currentUser.value.id}&_t=${Date.now()}`;
-          
-        console.log('Fetching service avails from:', url);
         
         const res = await fetch(url, {
           headers: { 
@@ -1128,10 +1090,6 @@ const __app = createApp({
         if (res.ok) { 
           const data = await res.json(); 
           serviceAvails.value = data.avails || []; 
-          console.log('Service Avails Received:', serviceAvails.value.length, 'items');
-          if (serviceAvails.value.length > 0) {
-            console.log('Sample service avail:', serviceAvails.value[0]);
-          }
         } else {
           const errorData = await res.json();
           console.error('Fetch service avails failed:', errorData);
