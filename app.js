@@ -794,13 +794,29 @@ const __app = createApp({
     async function confirmDeleteRoom() {
       loading.value = true;
       try {
+        const t = token.value || localStorage.getItem('token');
         const res = await fetch(`${API_URL}/rooms/${pendingDeleteRoom.value.id}`, {
           method: 'DELETE',
-          headers: { 'Authorization': `Bearer ${token.value}` }
+          headers: { 'Authorization': `Bearer ${t}` }
         });
-        if (res.ok) await fetchRooms();
-        else { const data = await res.json(); console.error(data.error || 'Error deleting room'); }
-      } catch (err) { console.error('Connection error: ' + err.message); }
+        if (res.ok) {
+          await fetchRooms();
+          showToast('Room deleted', 'success');
+        } else {
+          const contentType = res.headers.get('content-type') || '';
+          const bodyText = await res.text();
+          if (contentType.includes('application/json')) {
+            try {
+              const data = JSON.parse(bodyText || '{}');
+              showToast(data.error || 'Error deleting room', 'error');
+            } catch {
+              showToast('Error deleting room', 'error');
+            }
+          } else {
+            showToast(`Error deleting room (HTTP ${res.status})`, 'error');
+          }
+        }
+      } catch (err) { showToast('Connection error: ' + err.message, 'error'); }
       showDeleteRoomModal.value = false;
       pendingDeleteRoom.value = null;
       loading.value = false;
@@ -1001,6 +1017,56 @@ const __app = createApp({
     }
 
     async function saveService() {
+      if (!token.value && !localStorage.getItem('token')) { navigate('auth'); return; }
+      if (!serviceForm.value.name) { showToast('Service name is required', 'error'); return; }
+
+      loading.value = true;
+      try {
+        const t = token.value || localStorage.getItem('token');
+        const isEdit = !!editingService.value;
+        const url = isEdit
+          ? `${API_URL}/services/${editingService.value.id}`
+          : `${API_URL}/services`;
+
+        const res = await fetch(url, {
+          method: isEdit ? 'PUT' : 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${t}`
+          },
+          body: JSON.stringify({
+            name: serviceForm.value.name,
+            category: serviceForm.value.category,
+            price: Number(serviceForm.value.price || 0),
+            stock_quantity: Number(serviceForm.value.stock_quantity ?? -1),
+            description: serviceForm.value.description,
+            is_active: !!serviceForm.value.is_active
+          })
+        });
+
+        if (res.ok) {
+          await fetchServices();
+          showServiceAdminModal.value = false;
+          editingService.value = null;
+          showToast(isEdit ? 'Service updated' : 'Service created', 'success');
+        } else {
+          const contentType = res.headers.get('content-type') || '';
+          const bodyText = await res.text();
+          if (contentType.includes('application/json')) {
+            try {
+              const data = JSON.parse(bodyText || '{}');
+              showToast(data.error || 'Failed to save service', 'error');
+            } catch {
+              showToast('Failed to save service', 'error');
+            }
+          } else {
+            showToast(`Failed to save service (HTTP ${res.status})`, 'error');
+          }
+        }
+      } catch (err) {
+        showToast('Connection error.', 'error');
+      }
+      loading.value = false;
     }
 
     function deleteService(s) {
@@ -1011,16 +1077,27 @@ const __app = createApp({
     async function confirmDeleteService() {
       loading.value = true;
       try {
+        const t = token.value || localStorage.getItem('token');
         const res = await fetch(`${API_URL}/services/${pendingDeleteService.value.id}`, {
           method: 'DELETE',
-          headers: { 'Authorization': `Bearer ${token.value}` }
+          headers: { 'Authorization': `Bearer ${t}` }
         });
         if (res.ok) {
           await fetchServices();
           showToast('Service deleted! 🗑️', 'success');
         } else { 
-          const data = await res.json(); 
-          showToast(data.error || 'Error deleting service', 'error'); 
+          const contentType = res.headers.get('content-type') || '';
+          const bodyText = await res.text();
+          if (contentType.includes('application/json')) {
+            try {
+              const data = JSON.parse(bodyText || '{}');
+              showToast(data.error || 'Error deleting service', 'error');
+            } catch {
+              showToast('Error deleting service', 'error');
+            }
+          } else {
+            showToast(`Error deleting service (HTTP ${res.status})`, 'error');
+          }
         }
       } catch (err) { showToast('Connection error.', 'error'); }
       showDeleteServiceModal.value = false;
