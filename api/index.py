@@ -438,19 +438,29 @@ def handle_service_avail_action(avail_id):
         if request.method == 'PATCH':
             data = request.get_json()
             status = (data or {}).get('status')
-            # The verified Supabase schema for service_avails often does NOT include a
-            # 'status' column. To support staff actions (Confirm/Complete/Cancel)
-            # without schema changes, treat PATCH as an action that removes the
-            # request from the pending queue.
-            if status in ('confirmed', 'completed', 'cancelled'):
-                try:
-                    supabase_req(f'service_avails?id=eq.{avail_id}', method='DELETE')
-                    return jsonify({"message": f"Service request {status}", "id": avail_id, "status": status}), 200
-                except Exception as e:
-                    print(f"DEBUG: Action DELETE service_avails failed: {e}", flush=True)
-                    return jsonify({"error": "Failed to update service request."}), 500
+            if not status:
+                return jsonify({"error": "Status is required"}), 400
 
-            return jsonify({"message": "No changes applied", "id": avail_id, "status": status}), 200
+            valid_statuses = ('pending', 'confirmed', 'completed', 'cancelled')
+            if status not in valid_statuses:
+                return jsonify({"error": f"Invalid status. Must be one of: {', '.join(valid_statuses)}"}), 400
+
+            # Preferred behavior: persist status if the column exists.
+            try:
+                supabase_req(f'service_avails?id=eq.{avail_id}', method='PATCH', data={'status': status})
+                return jsonify({"message": f"Service request {status}", "id": avail_id, "status": status}), 200
+            except Exception as e:
+                # Fallback for older schemas where 'status' column doesn't exist.
+                err_str = str(e)
+                print(f"DEBUG: PATCH service_avails status failed: {err_str}", flush=True)
+                if status in ('confirmed', 'completed', 'cancelled') and ('status' in err_str and 'column' in err_str):
+                    try:
+                        supabase_req(f'service_avails?id=eq.{avail_id}', method='DELETE')
+                        return jsonify({"message": f"Service request {status}", "id": avail_id, "status": status}), 200
+                    except Exception as e2:
+                        print(f"DEBUG: Action DELETE service_avails failed: {e2}", flush=True)
+                        return jsonify({"error": "Failed to update service request."}), 500
+                return jsonify({"error": "Failed to update service request."}), 500
             
     except Exception as e:
         print(f"Error in service avail action: {e}", flush=True)
