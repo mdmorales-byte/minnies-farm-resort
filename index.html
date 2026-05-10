@@ -753,7 +753,21 @@
   <!-- SERVICE MODAL REMOVED TO PREVENT TRACKING PROTECTION BLOCK GLITCHES -->
 
 
-  <!-- PASSWORD MODALS PHYSICALLY REMOVED TO PREVENT BROWSER CACHE GLITCHES -->
+  <div v-if="showForgotPassword" class="modal-overlay" @click.self="showForgotPassword=false">
+    <div class="modal" style="max-width:420px">
+      <h3>Forgot Password</h3>
+      <p style="color:var(--muted);font-size:0.9rem;line-height:1.6">Enter your email and we’ll send you a password reset link.</p>
+      <div class="form-group" style="margin-top:1rem">
+        <label>Email</label>
+        <input v-model="forgotEmail" placeholder="you@example.com" />
+      </div>
+      <div v-if="forgotMsg" :class="['auth-msg', forgotMsgType]" style="margin-top:0.75rem">{{ forgotMsg }}</div>
+      <div style="display:flex;gap:1rem;justify-content:flex-end;margin-top:1.25rem">
+        <button class="btn" style="background:var(--sand);color:var(--text)" @click="showForgotPassword=false">Cancel</button>
+        <button class="btn btn-teal" @click="doForgotPassword">Send Link</button>
+      </div>
+    </div>
+  </div>
 
 
   <!-- ABOUT US -->
@@ -865,6 +879,6 @@
   </div>
 
 </div>
-<script src="app.js?v=2.1"></script>
+<script src="app.js?v=2.2"></script>
 </body>
 </html>

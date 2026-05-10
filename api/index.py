@@ -6,6 +6,8 @@ from flask import Flask, jsonify, request
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
 from passlib.hash import pbkdf2_sha256
+import secrets
+import time
 
 # --- CONFIG ---
 app = Flask(__name__)
@@ -23,6 +25,8 @@ def get_clean_env(key):
 
 SUPABASE_URL = get_clean_env('SUPABASE_URL')
 SUPABASE_KEY = get_clean_env('SUPABASE_KEY')
+
+RESET_TOKENS = {}
 
 # STARTUP DEBUG REPORT
 print("--- VERCEL STARTUP REPORT ---")
@@ -217,6 +221,49 @@ def register():
         return jsonify({"message": "Account created! You can now sign in.", "user": user}), 201
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+
+@app.route('/api/auth/forgot-password', methods=['POST'])
+def forgot_password():
+    try:
+        data = request.get_json() or {}
+        email = (data.get('email') or '').strip().lower()
+        if not email:
+            return jsonify({'error': 'Email is required.'}), 400
+
+        users = supabase_req(f'users?email=eq.{email}&select=id,name,email&limit=1')
+        if users:
+            token = secrets.token_urlsafe(32)
+            RESET_TOKENS[token] = {'user_id': users[0].get('id'), 'expires': time.time() + 3600}
+
+        # Always return 200 to avoid leaking whether email exists
+        return jsonify({'message': 'If that email exists, a reset link has been sent.'}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/auth/reset-password', methods=['POST'])
+def reset_password():
+    try:
+        data = request.get_json() or {}
+        token = data.get('token')
+        new_password = data.get('password')
+        if not token or not new_password:
+            return jsonify({'error': 'Token and password are required.'}), 400
+
+        token_data = RESET_TOKENS.get(token)
+        if not token_data:
+            return jsonify({'error': 'Invalid or expired reset token.'}), 400
+        if time.time() > token_data.get('expires', 0):
+            RESET_TOKENS.pop(token, None)
+            return jsonify({'error': 'Reset token has expired.'}), 400
+
+        hashed_pw = pbkdf2_sha256.hash(new_password)
+        supabase_req(f'users?id=eq.{token_data["user_id"]}', method='PATCH', data={'password': hashed_pw})
+        RESET_TOKENS.pop(token, None)
+        return jsonify({'message': 'Password reset successfully!'}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/api/auth/google', methods=['POST'])
 def google_login():
