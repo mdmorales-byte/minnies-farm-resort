@@ -71,13 +71,13 @@ def supabase_req(endpoint, method='GET', data=None):
             res = session.delete(url, headers=headers, timeout=15)
         else:
             return None
-            
+
         print(f"Supabase Status: {res.status_code}")
         print(f"Supabase Response: {res.text[:500]}")
-        
+
         res.raise_for_status()
         return res.json() if res.text else []
-        
+
     except Exception as e:
         print(f"Supabase request error ({method} {endpoint}): {str(e)}")
         # If DNS fails, try to log the IP for debugging
@@ -89,8 +89,38 @@ def supabase_req(endpoint, method='GET', data=None):
             print(f"DNS Debug: Success! IP is {ip}")
         except:
             print("DNS Debug: ALL resolution methods failed.")
-            
+
         return None
+
+
+def _get_user_from_request():
+    auth_header = request.headers.get('Authorization')
+    if not auth_header or not auth_header.startswith('Bearer '):
+        return None
+    received_token = auth_header.split(' ')[1]
+    user_id = None
+    try:
+        from flask_jwt_extended import decode_token
+        decoded = decode_token(received_token)
+        user_id = decoded.get('sub') or decoded.get('identity')
+    except Exception:
+        try:
+            user_id = get_jwt_identity()
+        except Exception:
+            user_id = None
+
+    if user_id is None:
+        return None
+
+    try:
+        user_id_int = int(user_id)
+    except Exception:
+        return None
+
+    users = supabase_req(f'users?id=eq.{user_id_int}&select=*')
+    if not users:
+        return None
+    return users[0]
 
 # --- ROUTES ---
 @app.after_request
@@ -280,12 +310,12 @@ def get_service_avails():
         
         if staff_param:
             # Staff sees everything
-            endpoint = 'service_avails?select=*,services(name,price)&order=availed_at.desc'
+            endpoint = 'service_avails?select=*,services(name,price),users(name,email)&order=availed_at.desc'
         elif user_id:
             # Guest sees only their own
-            endpoint = f'service_avails?user_id=eq.{user_id}&select=*,services(name,price)&order=availed_at.desc'
+            endpoint = f'service_avails?user_id=eq.{user_id}&select=*,services(name,price),users(name,email)&order=availed_at.desc'
         else:
-            endpoint = 'service_avails?select=*,services(name,price)&order=availed_at.desc'
+            endpoint = 'service_avails?select=*,services(name,price),users(name,email)&order=availed_at.desc'
             
         print(f"DEBUG: Service Avails Request: {endpoint}", flush=True)
         avails = supabase_req(endpoint)
@@ -295,11 +325,14 @@ def get_service_avails():
         if avails and isinstance(avails, list):
             for a in avails:
                 service_info = a.get('services', {})
+                user_info = a.get('users', {})
                 formatted_avails.append({
                     "id": a.get('id'),
                     "service_id": a.get('service_id'),
                     "user_id": a.get('user_id'),
-                    "status": "pending", # Static default as column doesn't exist in DB
+                    "guest_name": (user_info.get('name') if isinstance(user_info, dict) else None) or a.get('guest_name') or '',
+                    "guest_email": (user_info.get('email') if isinstance(user_info, dict) else None) or a.get('guest_email') or '',
+                    "status": a.get('status') or "pending",
                     "notes": a.get('notes'),
                     "availed_at": a.get('availed_at'),
                     "created_at": a.get('availed_at'), # Keep for frontend compatibility
@@ -323,10 +356,18 @@ def handle_service_avail_action(avail_id):
             
         if request.method == 'PATCH':
             data = request.get_json()
-            # Since 'status' column doesn't exist, this is mostly for frontend state
-            # but we can log it or perform other side effects if needed.
-            print(f"DEBUG: Update action for service request {avail_id}: {data}", flush=True)
-            return jsonify({"message": "Service request updated", "id": avail_id}), 200
+            status = (data or {}).get('status')
+            update_data = {}
+            if status:
+                update_data['status'] = status
+
+            if update_data:
+                try:
+                    supabase_req(f'service_avails?id=eq.{avail_id}', method='PATCH', data=update_data)
+                except Exception as e:
+                    print(f"DEBUG: PATCH service_avails failed: {e}", flush=True)
+
+            return jsonify({"message": "Service request updated", "id": avail_id, "status": status}), 200
             
     except Exception as e:
         print(f"Error in service avail action: {e}", flush=True)
@@ -463,6 +504,60 @@ def handle_bookings():
         return jsonify({"bookings": bookings or []}), 200
     except Exception as e:
         print(f"DEBUG: Error in handle_bookings: {str(e)}", flush=True)
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/api/bookings/<booking_id>/status', methods=['PUT'])
+def update_booking_status(booking_id):
+    try:
+        user = _get_user_from_request()
+        if not user:
+            return jsonify({"error": "Unauthorized"}), 401
+        if str(user.get('role', '')).lower() != 'staff':
+            return jsonify({"error": "Only staff can update booking status."}), 403
+
+        data = request.get_json() or {}
+        status = data.get('status')
+        if status not in ('pending', 'confirmed', 'cancelled', 'completed'):
+            return jsonify({"error": "Invalid status."}), 400
+
+        existing = supabase_req(f'bookings?id=eq.{booking_id}&select=*')
+        if not existing:
+            return jsonify({"error": "Booking not found."}), 404
+
+        supabase_req(f'bookings?id=eq.{booking_id}', method='PATCH', data={'status': status})
+        updated = supabase_req(f'bookings?id=eq.{booking_id}&select=*')
+        return jsonify({"message": "Status updated!", "booking": updated[0] if updated else {"id": booking_id, "status": status}}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/api/bookings/<booking_id>', methods=['DELETE'])
+def delete_or_cancel_booking(booking_id):
+    try:
+        user = _get_user_from_request()
+        if not user:
+            return jsonify({"error": "Unauthorized"}), 401
+
+        existing = supabase_req(f'bookings?id=eq.{booking_id}&select=*')
+        if not existing:
+            return jsonify({"error": "Booking not found."}), 404
+        booking = existing[0]
+
+        if str(user.get('role', '')).lower() == 'staff':
+            supabase_req(f'bookings?id=eq.{booking_id}', method='DELETE')
+            return jsonify({"message": "Booking deleted successfully."}), 200
+
+        # Guest cancellation (soft)
+        if str(booking.get('user_id')) != str(user.get('id')):
+            return jsonify({"error": "You can only cancel your own bookings."}), 403
+        if booking.get('status') in ('cancelled', 'completed'):
+            return jsonify({"error": f"Booking is already {booking.get('status')}."}), 400
+
+        supabase_req(f'bookings?id=eq.{booking_id}', method='PATCH', data={'status': 'cancelled'})
+        updated = supabase_req(f'bookings?id=eq.{booking_id}&select=*')
+        return jsonify({"message": "Booking cancelled successfully.", "booking": updated[0] if updated else {"id": booking_id, "status": "cancelled"}}), 200
+    except Exception as e:
         return jsonify({"error": str(e)}), 500
 
 @app.route('/api/reviews', methods=['GET', 'POST'])
