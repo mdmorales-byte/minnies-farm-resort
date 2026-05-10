@@ -87,7 +87,7 @@ createApp({
       showForgotPassword.value = false;
       showRoomModal.value = false;
       showServiceAdminModal.value = false;
-      showServiceModal.value = false;
+      showServiceModal.value = false; // FORCE CLOSE SERVICE MODAL
       resetToken.value = '';
 
       // 1. COMPLETELY PURGE STATE
