@@ -656,14 +656,6 @@
     .page {
       min-height: 80vh;
       animation: fadeIn 0.4s ease;
-      display: none; /* Default to hidden to prevent overlapping */
-    }
-
-    /* Force show ONLY when the v-if condition is met via Vue's element display */
-    .page[style*="display: block"], 
-    .page[style*="display: flex"],
-    .page:not([style*="display: none"]) {
-      /* This allows Vue to control visibility without !important interference */
     }
 
     .modal {
