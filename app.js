@@ -750,14 +750,15 @@ const __app = createApp({
     }
 
     async function saveRoom() {
-      if (!roomForm.value.room_number || !roomForm.value.name || !roomForm.value.price_per_night) return;
+      if (!roomForm.value.room_number || !roomForm.value.name || !roomForm.value.price_per_night) { showToast('Please fill in Room Number, Room Name, and Price/Night', 'error'); return; }
       loading.value = true;
       try {
         const method = editingRoom.value ? 'PUT' : 'POST';
         const url = editingRoom.value ? `${API_URL}/rooms/${editingRoom.value.id}` : `${API_URL}/rooms`;
+        const t = token.value || localStorage.getItem('token');
         const res = await fetch(url, {
           method,
-          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token.value}` },
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${t}` },
           body: JSON.stringify({
             room_number: roomForm.value.room_number,
             name: roomForm.value.name,
@@ -781,8 +782,21 @@ const __app = createApp({
           showRoomModal.value = false;
           showToast(editingRoom.value ? 'Room updated! 🏠' : 'Room created! 🏠', 'success');
         }
-        else { const data = await res.json(); console.error('Room save error:', data); alert(data.error || 'Error saving room'); }
-      } catch (err) { alert('Connection error: ' + err.message); }
+        else {
+          const contentType = res.headers.get('content-type') || '';
+          const bodyText = await res.text();
+          if (contentType.includes('application/json')) {
+            try {
+              const data = JSON.parse(bodyText || '{}');
+              showToast(data.error || 'Error saving room', 'error');
+            } catch {
+              showToast('Error saving room', 'error');
+            }
+          } else {
+            showToast(`Error saving room (HTTP ${res.status})`, 'error');
+          }
+        }
+      } catch (err) { showToast('Connection error: ' + err.message, 'error'); }
       loading.value = false;
     }
 
