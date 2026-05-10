@@ -911,19 +911,31 @@ const __app = createApp({
     }
 
     async function confirmDeleteServiceAvail() {
-      if (!pendingDeleteId.value || !token.value) return;
+      const t = token.value || localStorage.getItem('token');
+      if (!pendingDeleteId.value) return;
+      if (!t) { showToast('Please log in again.', 'error'); return; }
       loading.value = true;
       try {
         const res = await fetch(`${API_URL}/services/avails/${pendingDeleteId.value}`, {
           method: 'DELETE',
-          headers: { 'Authorization': `Bearer ${token.value}` }
+          headers: { 'Authorization': `Bearer ${t}` }
         });
         if (res.ok) {
           showToast('Request deleted', 'success');
           await fetchServiceAvails();
         } else {
-          const d = await res.json();
-          showToast(d.error || 'Delete failed', 'error');
+          const contentType = res.headers.get('content-type') || '';
+          const bodyText = await res.text();
+          if (contentType.includes('application/json')) {
+            try {
+              const d = JSON.parse(bodyText || '{}');
+              showToast(d.error || 'Delete failed', 'error');
+            } catch {
+              showToast('Delete failed', 'error');
+            }
+          } else {
+            showToast(`Delete failed (HTTP ${res.status})`, 'error');
+          }
         }
       } catch (err) { showToast('Connection error.', 'error'); }
       showDeleteModal.value = false;
@@ -949,14 +961,15 @@ const __app = createApp({
     }
 
     async function updateAvailStatus(id, newStatus) {
-      if (!token.value) return;
+      const t = token.value || localStorage.getItem('token');
+      if (!t) { showToast('Please log in again.', 'error'); return; }
       loading.value = true;
       try {
         const res = await fetch(`${API_URL}/services/avails/${id}`, {
           method: 'PATCH',
           headers: { 
             'Content-Type': 'application/json', 
-            'Authorization': `Bearer ${token.value}` 
+            'Authorization': `Bearer ${t}` 
           },
           body: JSON.stringify({ status: newStatus })
         });
@@ -964,8 +977,18 @@ const __app = createApp({
           showToast(`Service request ${newStatus}`, 'success');
           await fetchServiceAvails();
         } else {
-          const d = await res.json();
-          showToast(d.error || 'Update failed', 'error');
+          const contentType = res.headers.get('content-type') || '';
+          const bodyText = await res.text();
+          if (contentType.includes('application/json')) {
+            try {
+              const d = JSON.parse(bodyText || '{}');
+              showToast(d.error || 'Update failed', 'error');
+            } catch {
+              showToast('Update failed', 'error');
+            }
+          } else {
+            showToast(`Update failed (HTTP ${res.status})`, 'error');
+          }
         }
       } catch (err) { showToast('Connection error.', 'error'); }
       loading.value = false;
