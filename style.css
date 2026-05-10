@@ -651,7 +651,8 @@
       z-index: 2000;
       padding: 1.5rem;
     }
-    [v-cloak] { display: none; }
+    [v-cloak] { display: none !important; }
+    [v-cloak] > * { display: none !important; }
     .modal-overlay[style*="display: flex"],
     .modal-overlay:not([style*="display: none"]) {
         /* This is handled by Vue v-if, but we ensure it stays hidden otherwise */
