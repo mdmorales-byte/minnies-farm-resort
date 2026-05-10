@@ -346,7 +346,7 @@ def get_service_avails():
         print(f"Error fetching service avails: {e}", flush=True)
         return jsonify({"error": str(e)}), 500
 
-@app.route('/api/services/avails/<int:avail_id>', methods=['DELETE', 'PATCH'])
+@app.route('/api/services/avails/<avail_id>', methods=['DELETE', 'PATCH'])
 def handle_service_avail_action(avail_id):
     try:
         if request.method == 'DELETE':
