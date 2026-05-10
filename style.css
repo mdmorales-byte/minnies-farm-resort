@@ -723,6 +723,11 @@
     .about-section + .about-section { border-top: 1px solid var(--border); }
     .about-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4rem; align-items: center; }
     @media(max-width: 768px) { .about-grid { grid-template-columns: 1fr; gap: 2rem; } }
+    @media(max-width: 768px) {
+      .contact-grid { grid-template-columns: 1fr !important; gap: 1.25rem !important; }
+      .contact-map { height: 260px !important; }
+      .contact-card { padding: 1.25rem !important; }
+    }
     .about-img-block {
       border-radius: 20px;
       overflow: hidden;
