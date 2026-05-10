@@ -652,6 +652,10 @@
     }
     /* ── PAGE ROUTING ── */
     [v-cloak] { display: none; }
+    .page {
+      min-height: 80vh;
+      animation: fadeIn 0.4s ease;
+    }
     .modal-overlay[style*="display: flex"],
     .modal-overlay:not([style*="display: none"]) {
         /* This is handled by Vue v-if, but we ensure it stays hidden otherwise */
