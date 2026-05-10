@@ -14,7 +14,13 @@ app = Flask(__name__)
 # Increase max content length to 10MB to handle image uploads better on Vercel
 app.config['MAX_CONTENT_LENGTH'] = 10 * 1024 * 1024
 CORS(app)
-app.config["JWT_SECRET_KEY"] = os.getenv("JWT_SECRET_KEY", "dev-secret")
+
+DEBUG = os.getenv('DEBUG', '').strip() == '1'
+
+_jwt_secret = os.getenv("JWT_SECRET_KEY")
+if not _jwt_secret:
+    raise RuntimeError("JWT_SECRET_KEY environment variable is required")
+app.config["JWT_SECRET_KEY"] = _jwt_secret
 jwt = JWTManager(app)
 
 # Use a more robust way to get env vars and TRIM them aggressively
@@ -28,11 +34,8 @@ SUPABASE_KEY = get_clean_env('SUPABASE_KEY')
 
 RESET_TOKENS = {}
 
-# STARTUP DEBUG REPORT
-print("--- VERCEL STARTUP REPORT ---")
-print(f"SUPABASE_URL length: {len(SUPABASE_URL)}")
-print(f"SUPABASE_KEY length: {len(SUPABASE_KEY)}")
-print("----------------------------")
+if not SUPABASE_URL or not SUPABASE_KEY:
+    raise RuntimeError("SUPABASE_URL and SUPABASE_KEY environment variables are required")
 
 # --- HELPERS ---
 def supabase_req(endpoint, method='GET', data=None):
@@ -62,8 +65,8 @@ def supabase_req(endpoint, method='GET', data=None):
         adapter = requests.adapters.HTTPAdapter(max_retries=5)
         session.mount('https://', adapter)
         
-        print(f"Supabase API Call: {method} {url}")
-        if data: print(f"Supabase Payload: {json.dumps(data)}")
+        if DEBUG:
+            print(f"Supabase API Call: {method} {url}")
         
         if method == 'GET':
             res = session.get(url, headers=headers, timeout=15)
@@ -76,23 +79,28 @@ def supabase_req(endpoint, method='GET', data=None):
         else:
             return None
 
-        print(f"Supabase Status: {res.status_code}")
-        print(f"Supabase Response: {res.text[:500]}")
+        if DEBUG:
+            print(f"Supabase Status: {res.status_code}")
+            print(f"Supabase Response: {res.text[:500]}")
 
         res.raise_for_status()
         return res.json() if res.text else []
 
     except Exception as e:
-        print(f"Supabase request error ({method} {endpoint}): {str(e)}")
+        if DEBUG:
+            print(f"Supabase request error ({method} {endpoint}): {str(e)}")
         # If DNS fails, try to log the IP for debugging
         try:
             host = url_base.split("//")[-1].split("/")[0]
-            print(f"DNS Debug: Final attempt to resolve '{host}'...")
+            if DEBUG:
+                print(f"DNS Debug: Final attempt to resolve '{host}'...")
             import socket
             ip = socket.gethostbyname(host)
-            print(f"DNS Debug: Success! IP is {ip}")
+            if DEBUG:
+                print(f"DNS Debug: Success! IP is {ip}")
         except:
-            print("DNS Debug: ALL resolution methods failed.")
+            if DEBUG:
+                print("DNS Debug: ALL resolution methods failed.")
 
         return None
 
@@ -139,33 +147,14 @@ def add_header(response):
 def health():
     return jsonify({"status": "online", "supabase": bool(SUPABASE_URL)})
 
-# DEBUG: Temporary bypass to auto-login as staff
-@app.route('/api/auth/debug-login', methods=['POST'])
-def debug_login():
-    try:
-        # Find first staff user or any user
-        users = supabase_req('users?select=*&limit=1')
-        if users:
-            user = users[0]
-            # Force role to staff for debug
-            user['role'] = 'staff'
-            token = create_access_token(identity=str(user.get('id')))
-            return jsonify({"token": token, "user": user}), 200
-        return jsonify({"error": "No users found"}), 404
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
 @app.route('/api/auth/login', methods=['POST'])
 def login():
     try:
         data = request.get_json()
         email = data.get('email', '').strip().lower()
         password = data.get('password')
-        
-        print(f"Login attempt for: {email}")
-        
+
         users = supabase_req(f'users?email=eq.{email}&select=*')
-        print(f"Users found: {len(users) if users else 0}")
         
         if not users:
             return jsonify({"error": "Invalid email or password."}), 401
@@ -309,12 +298,6 @@ def handle_rooms():
         # GET logic
         rooms = supabase_req('rooms?select=*')
         if rooms and isinstance(rooms, list):
-            # Debug: show room statuses
-            statuses = {}
-            for r in rooms:
-                s = r.get('room_status', 'unknown')
-                statuses[s] = statuses.get(s, 0) + 1
-            print(f"Rooms GET - total: {len(rooms)}, statuses: {statuses}")
             for room in rooms:
                 # FORCE AMENITIES TO BE A CLEAN LIST OF WORDS
                 raw = room.get('amenities', '')
@@ -344,16 +327,12 @@ def handle_services():
         # GET logic
         staff_param = request.args.get('staff', 'false').lower()
         is_staff = (staff_param == 'true')
-        print(f"Services GET - staff_param: '{staff_param}', is_staff: {is_staff}")
         
         if is_staff:
             # Staff sees everything
             services = supabase_req('services?select=*&order=id.asc')
-            print(f"DEBUG: Staff view - total services: {len(services) if services else 0}", flush=True)
         else:
             # Guests ONLY see active services
-            print("DEBUG: Guest view - attempting robust fetch", flush=True)
-            
             # 1. Try standard Boolean filter
             services = supabase_req('services?is_active=eq.true&select=*&order=id.asc')
             

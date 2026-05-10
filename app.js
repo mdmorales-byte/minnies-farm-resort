@@ -121,9 +121,7 @@ const __app = createApp({
           else await fetchUserBookings();
           await fetchServiceAvails();
         }
-      } catch (e) {
-        console.error('Bootstrap error:', e);
-      }
+      } catch (e) {}
     });
 
     async function doResetPassword() {
@@ -473,7 +471,7 @@ const __app = createApp({
     async function logout() {
       try {
         await fetch(`${API_URL}/auth/logout`, { method: 'POST', headers: { 'Authorization': `Bearer ${token.value}` } });
-      } catch (err) { console.error('Logout error:', err); }
+      } catch (err) {}
       currentUser.value = null;
       token.value = '';
       localStorage.removeItem('token');
@@ -486,7 +484,7 @@ const __app = createApp({
         const res = await fetch(`${API_URL}/auth/me`, { headers: { 'Authorization': `Bearer ${token.value}` } });
         if (res.ok) { const data = await res.json(); currentUser.value = data.user; }
         else { localStorage.removeItem('token'); token.value = ''; }
-      } catch (err) { console.error('Fetch user error:', err); }
+      } catch (err) {}
     }
 
     // ── ROOMS ──────────────────────────────────────────────────────────────────
@@ -516,7 +514,7 @@ const __app = createApp({
             }
           });
         }
-      } catch (err) { console.error('Fetch rooms error:', err); }
+      } catch (err) {}
     }
 
     // ── BOOKINGS ─────────────────────────────────────────
@@ -594,11 +592,8 @@ const __app = createApp({
               total: b.total_price || b.total || 0
             };
           });
-        } else {
-          const errorData = await res.json();
-          console.error('Fetch user bookings failed:', errorData);
         }
-      } catch (err) { console.error('Fetch user bookings error:', err); }
+      } catch (err) {}
     }
 
     async function fetchAllBookings() {
@@ -627,11 +622,8 @@ const __app = createApp({
               total: b.total_price || b.total || 0
             };
           });
-        } else {
-          const errorData = await res.json();
-          console.error('Fetch all bookings failed:', errorData);
         }
-      } catch (e) { console.error('Fetch all bookings error:', e); }
+      } catch (e) {}
     }
 
     async function cancelBooking(b) {
@@ -640,7 +632,7 @@ const __app = createApp({
       try {
         const res = await fetch(`${API_URL}/bookings/${b.id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token.value}` } });
         if (res.ok) await fetchUserBookings();
-      } catch (err) { console.error('Cancel booking error:', err); }
+      } catch (err) {}
       loading.value = false;
     }
 
@@ -698,7 +690,7 @@ const __app = createApp({
           reviewsAvg.value = data.average_rating || 0;
           reviewsTotal.value = data.total_reviews || 0;
         }
-      } catch (err) { console.error('Fetch reviews error:', err); }
+      } catch (err) {}
     }
 
     async function submitReview() {
@@ -867,7 +859,7 @@ const __app = createApp({
           const data = await res.json(); 
           services.value = data.services || [];
         }
-      } catch (err) { console.error('Fetch services error:', err); }
+      } catch (err) {}
       servicesLoading.value = false;
     }
 
@@ -955,7 +947,7 @@ const __app = createApp({
           headers: { 'Authorization': `Bearer ${token.value}` }
         });
         if (res.ok) await fetchAllBookings();
-      } catch (err) { console.error(err); }
+      } catch (err) {}
       showDeleteBookingModal.value = false;
       pendingDeleteBookingId.value = null;
     }
@@ -1199,7 +1191,6 @@ const __app = createApp({
         showToast('Service request submitted! 🎉', 'success');
         fetchServiceAvails(); // Refresh dashboard list
       } catch (err) { 
-        console.error('Service request error:', err);
         showToast('Connection error.', 'error');
       }
     }
@@ -1232,11 +1223,8 @@ const __app = createApp({
               a.guest_email ||
               ''
           }));
-        } else {
-          const errorData = await res.json();
-          console.error('Fetch service avails failed:', errorData);
         }
-      } catch (err) { console.error('Fetch service avails error:', err); }
+      } catch (err) {}
     }
 
     // ── WATCH staffTab ──────────
@@ -1286,6 +1274,3 @@ const __app = createApp({
 });
 
 __app.mount('#app');
-
-window.addEventListener('error', function(e) { console.error('JavaScript error:', e.error); });
-window.addEventListener('unhandledrejection', function(e) { console.error('Unhandled promise rejection:', e.reason); });

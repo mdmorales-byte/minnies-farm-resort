@@ -3,6 +3,27 @@ __pycache__/
 *.pyc
 venv/
 
+.venv/
+*.pyo
+*.pyd
+*.egg-info/
+dist/
+build/
+
 # Environment variables (keep this secret!)
 .env
 minnies-farm-backend/.env
+
+.env.*
+!.env.example
+
+# Uploads / user content
+uploads/
+
+# Vercel
+.vercel/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/

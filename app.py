@@ -29,7 +29,10 @@ if not os.getenv('VERCEL'):
 
 def initialize_app(app):
     # Config
-    app.config["JWT_SECRET_KEY"] = os.getenv("JWT_SECRET_KEY", "dev-secret")
+    _jwt_secret = os.getenv("JWT_SECRET_KEY")
+    if not _jwt_secret:
+        raise RuntimeError("JWT_SECRET_KEY environment variable is required")
+    app.config["JWT_SECRET_KEY"] = _jwt_secret
     app.config["UPLOAD_FOLDER"] = os.path.join(os.getcwd(), "uploads")
     
     if not os.path.exists(app.config["UPLOAD_FOLDER"]):
