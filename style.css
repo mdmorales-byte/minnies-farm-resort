@@ -1,5 +1,8 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
+    /* CRITICAL: Hide Vue template syntax until Vue renders */
+    [v-cloak] { display: none !important; }
+
     :root {
       --sand: #f5f0e8;
       --deep: #1a2e2a;
@@ -670,15 +673,16 @@
       z-index: 2000;
     }
     /* ── PAGE ROUTING ── */
-    [v-cloak] { display: none !important; }
     
     .page {
-      display: block;
-      min-height: 80vh;
+      display: block !important;
+      min-height: calc(100vh - 64px);
       animation: fadeIn 0.4s ease;
       position: relative;
       width: 100%;
       overflow-x: hidden;
+      margin: 0;
+      padding: 0;
     }
 
     .modal {

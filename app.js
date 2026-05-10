@@ -1159,19 +1159,6 @@ createApp({
       } catch (err) { console.error('Fetch service avails error:', err); }
     }
 
-    // ── REVIEWS ─────────────────────────────────
-    async function fetchReviews(roomId) {
-      try {
-        const res = await fetch(`${API_URL}/reviews?room_id=${roomId}`);
-        if (res.ok) {
-          const data = await res.json();
-          reviews.value = data.reviews || [];
-          reviewsAvg.value = data.average_rating || 0;
-          reviewsTotal.value = data.total_reviews || 0;
-        }
-      } catch (err) { console.error('Fetch reviews error:', err); }
-    }
-
     // ── MOUNT ──────────
     onMounted(async () => {
       await fetchCurrentUser();
@@ -1221,7 +1208,6 @@ createApp({
       removeImage,
       handleFileUpload,
       staffTab,
-      navigate,
       showToast,
       // ── reviews ──
       reviews, reviewsAvg, reviewsTotal, reviewForm, reviewHover,
