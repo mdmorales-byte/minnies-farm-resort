@@ -650,12 +650,8 @@
       justify-content: center;
       z-index: 2000;
     }
-    /* ── PAGE ROUTING (Engine Independent) ── */
-    .page { display: none; } /* Hide all pages by default */
-    #page-home { display: block; } /* Always show home by default */
-
-    /* When Vue loads, it will control visibility via inline styles or class removal */
-    [v-cloak] { display: none !important; }
+    /* ── PAGE ROUTING ── */
+    [v-cloak] { display: none; }
     .modal-overlay[style*="display: flex"],
     .modal-overlay:not([style*="display: none"]) {
         /* This is handled by Vue v-if, but we ensure it stays hidden otherwise */
