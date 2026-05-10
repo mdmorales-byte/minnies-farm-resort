@@ -667,8 +667,8 @@ def handle_reviews():
             rating = data.get('rating')
             review_text = data.get('review')
 
-            if room_id is None or booking_id is None or rating is None:
-                return jsonify({"error": "room_id, booking_id, and rating are required."}), 400
+            if room_id is None or rating is None:
+                return jsonify({"error": "room_id and rating are required."}), 400
 
             try:
                 rating_int = int(rating)
@@ -678,20 +678,52 @@ def handle_reviews():
             if rating_int < 1 or rating_int > 5:
                 return jsonify({"error": "rating must be between 1 and 5."}), 400
 
-            existing = supabase_req(f'reviews?booking_id=eq.{booking_id}&select=id&limit=1')
-            if existing:
-                return jsonify({"error": "You already reviewed this booking."}), 409
+            # Prevent duplicate reviews. Prefer booking_id if the schema supports it;
+            # otherwise fall back to user_id + room_id.
+            if booking_id is not None:
+                try:
+                    existing = supabase_req(f'reviews?booking_id=eq.{booking_id}&select=id&limit=1')
+                    if existing:
+                        return jsonify({"error": "You already reviewed this booking."}), 409
+                except Exception:
+                    pass
 
+            try:
+                existing_fallback = supabase_req(
+                    f'reviews?user_id=eq.{user.get("id")}&room_id=eq.{room_id}&select=id&limit=1'
+                )
+                if existing_fallback:
+                    return jsonify({"error": "You already reviewed this room."}), 409
+            except Exception:
+                pass
+
+            # Supabase schema (from your screenshot) uses 'comment' not 'review'.
             payload = {
                 'room_id': room_id,
-                'booking_id': booking_id,
                 'user_id': user.get('id'),
                 'rating': rating_int,
-                'review': review_text
+                'comment': review_text
             }
-            result = supabase_req('reviews', method='POST', data=payload)
+
+            # Try including booking_id if present; ignore if schema doesn't have it.
+            if booking_id is not None:
+                payload_with_booking = dict(payload)
+                payload_with_booking['booking_id'] = booking_id
+            else:
+                payload_with_booking = payload
+
+            try:
+                result = supabase_req('reviews', method='POST', data=payload_with_booking)
+            except Exception as e:
+                err_str = str(e)
+                if 'booking_id' in err_str and 'column' in err_str:
+                    result = supabase_req('reviews', method='POST', data=payload)
+                else:
+                    raise
+
             inserted = result[0] if isinstance(result, list) and result else payload
             inserted['guest_name'] = user.get('name')
+            inserted['review'] = inserted.get('review') or inserted.get('comment') or ''
             return jsonify({"message": "Review added", "review": inserted}), 201
             
         room_id = request.args.get('room_id')
@@ -738,7 +770,8 @@ def handle_reviews():
 
             formatted.append({
                 **r,
-                'guest_name': r.get('guest_name') or guest_name or 'Guest'
+                'guest_name': r.get('guest_name') or guest_name or 'Guest',
+                'review': r.get('review') or r.get('comment') or ''
             })
 
         avg = round((sum_rating / total), 2) if total else 0
