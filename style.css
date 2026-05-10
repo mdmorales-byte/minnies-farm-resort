@@ -653,18 +653,10 @@
     /* ── PAGE ROUTING ── */
     [v-cloak] { display: none !important; }
     
-    /* Ensure only the active page is visible */
     .page {
       min-height: 80vh;
-      display: none; /* Hide all by default */
       animation: fadeIn 0.4s ease;
     }
-
-    /* Standard CSS fallback to show Home if Vue hasn't loaded yet */
-    #page-home { display: block; }
-
-    /* When Vue is active, it uses inline styles to show the correct page.
-       We remove !important from .page to allow Vue to override it. */
 
     .modal {
       background: var(--white);
