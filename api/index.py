@@ -657,16 +657,77 @@ def delete_or_cancel_booking(booking_id):
 def handle_reviews():
     try:
         if request.method == 'POST':
-            data = request.get_json()
-            result = supabase_req('reviews', method='POST', data=data)
-            return jsonify({"message": "Review added", "review": result}), 201
+            user = _get_user_from_request()
+            if not user:
+                return jsonify({"error": "Unauthorized"}), 401
+
+            data = request.get_json() or {}
+            room_id = data.get('room_id')
+            booking_id = data.get('booking_id')
+            rating = data.get('rating')
+            review_text = data.get('review')
+
+            if room_id is None or booking_id is None or rating is None:
+                return jsonify({"error": "room_id, booking_id, and rating are required."}), 400
+
+            try:
+                rating_int = int(rating)
+            except Exception:
+                return jsonify({"error": "rating must be an integer."}), 400
+
+            if rating_int < 1 or rating_int > 5:
+                return jsonify({"error": "rating must be between 1 and 5."}), 400
+
+            existing = supabase_req(f'reviews?booking_id=eq.{booking_id}&select=id&limit=1')
+            if existing:
+                return jsonify({"error": "You already reviewed this booking."}), 409
+
+            payload = {
+                'room_id': room_id,
+                'booking_id': booking_id,
+                'user_id': user.get('id'),
+                'rating': rating_int,
+                'review': review_text
+            }
+            result = supabase_req('reviews', method='POST', data=payload)
+            inserted = result[0] if isinstance(result, list) and result else payload
+            inserted['guest_name'] = user.get('name')
+            return jsonify({"message": "Review added", "review": inserted}), 201
             
         room_id = request.args.get('room_id')
-        endpoint = 'reviews?select=*'
+        endpoint = 'reviews?select=*,users(name)&order=created_at.desc'
         if room_id:
             endpoint += f'&room_id=eq.{room_id}'
-        reviews = supabase_req(endpoint)
-        return jsonify({"reviews": reviews or []}), 200
+        rows = supabase_req(endpoint) or []
+
+        formatted = []
+        total = 0
+        sum_rating = 0
+        for r in rows if isinstance(rows, list) else []:
+            rating_val = r.get('rating')
+            try:
+                rating_num = float(rating_val) if rating_val is not None else 0
+            except Exception:
+                rating_num = 0
+            if rating_num:
+                sum_rating += rating_num
+                total += 1
+
+            user_info = r.get('users', {})
+            guest_name = user_info.get('name') if isinstance(user_info, dict) else None
+
+            formatted.append({
+                **r,
+                'guest_name': r.get('guest_name') or guest_name or 'Guest'
+            })
+
+        avg = round((sum_rating / total), 2) if total else 0
+
+        return jsonify({
+            "reviews": formatted,
+            "average_rating": avg,
+            "total_reviews": total
+        }), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
