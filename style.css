@@ -651,10 +651,10 @@
       z-index: 2000;
     }
     /* ── PAGE ROUTING (Engine Independent) ── */
-    .page { display: none !important; } /* Hide all pages by default */
-    #page-home { display: block !important; } /* Always show home by default */
+    .page { display: none; } /* Hide all pages by default */
+    #page-home { display: block; } /* Always show home by default */
 
-    /* When Vue loads, it will control visibility via inline styles */
+    /* When Vue loads, it will control visibility via inline styles or class removal */
     [v-cloak] { display: none !important; }
     .modal-overlay[style*="display: flex"],
     .modal-overlay:not([style*="display: none"]) {
