@@ -681,12 +681,9 @@ def handle_reviews():
             # Prevent duplicate reviews. Prefer booking_id if the schema supports it;
             # otherwise fall back to user_id + room_id.
             if booking_id is not None:
-                try:
-                    existing = supabase_req(f'reviews?booking_id=eq.{booking_id}&select=id&limit=1')
-                    if existing:
-                        return jsonify({"error": "You already reviewed this booking."}), 409
-                except Exception:
-                    pass
+                existing = supabase_req(f'reviews?booking_id=eq.{booking_id}&select=id&limit=1')
+                if isinstance(existing, list) and existing:
+                    return jsonify({"error": "You already reviewed this booking."}), 409
 
             try:
                 existing_fallback = supabase_req(
@@ -712,14 +709,14 @@ def handle_reviews():
             else:
                 payload_with_booking = payload
 
-            try:
-                result = supabase_req('reviews', method='POST', data=payload_with_booking)
-            except Exception as e:
-                err_str = str(e)
-                if 'booking_id' in err_str and 'column' in err_str:
-                    result = supabase_req('reviews', method='POST', data=payload)
-                else:
-                    raise
+            result = supabase_req('reviews', method='POST', data=payload_with_booking)
+            if result is None and booking_id is not None:
+                # Supabase returned a 400 like: "Could not find the 'booking_id' column..."
+                # supabase_req swallows the exception and returns None, so explicitly retry.
+                result = supabase_req('reviews', method='POST', data=payload)
+
+            if result is None:
+                return jsonify({"error": "Failed to save review. Please try again."}), 500
 
             inserted = result[0] if isinstance(result, list) and result else payload
             inserted['guest_name'] = user.get('name')
