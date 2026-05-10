@@ -962,7 +962,9 @@ const __app = createApp({
 
     async function updateAvailStatus(id, newStatus) {
       const t = token.value || localStorage.getItem('token');
+      if (!id) { showToast('Invalid request id.', 'error'); return; }
       if (!t) { showToast('Please log in again.', 'error'); return; }
+      showToast('Updating service request...', 'info');
       loading.value = true;
       try {
         const res = await fetch(`${API_URL}/services/avails/${id}`, {
