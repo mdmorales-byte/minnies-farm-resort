@@ -1089,7 +1089,18 @@ const __app = createApp({
         });
         if (res.ok) { 
           const data = await res.json(); 
-          serviceAvails.value = data.avails || []; 
+          serviceAvails.value = (data.avails || []).map(a => ({
+            ...a,
+            guest_name:
+              a.guest_name ||
+              a.guestName ||
+              a.guest ||
+              a.user_name ||
+              (a.user && a.user.name) ||
+              a.email ||
+              a.guest_email ||
+              ''
+          }));
         } else {
           const errorData = await res.json();
           console.error('Fetch service avails failed:', errorData);

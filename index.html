@@ -547,7 +547,7 @@
             <thead><tr><th>Guest</th><th>Service</th><th>Price</th><th>Date</th><th>Status</th><th>Actions</th></tr></thead>
             <tbody>
               <tr v-for="a in serviceAvails" :key="a.id">
-                <td>{{ a.guest_name }}</td>
+                <td>{{ a.guest_name || a.guestName || a.guest || a.user_name || (a.user && a.user.name) || a.email || '—' }}</td>
                 <td>{{ a.service_name }}</td>
                 <td>₱{{ Number(a.total_price).toLocaleString() }}</td>
                 <td>{{ a.created_at ? a.created_at.slice(0,10) : '' }}</td>
@@ -721,7 +721,7 @@
       <p>Are you sure you want to delete this service request? This action cannot be undone.</p>
       <div style="display:flex;gap:1rem;justify-content:flex-end;margin-top:1.5rem">
         <button class="btn" style="background:var(--sand);color:var(--text)" @click="showDeleteModal=false">Cancel</button>
-        <button class="btn btn-danger" @click="confirmDelete">Delete</button>
+        <button class="btn btn-danger" @click="confirmDeleteServiceAvail">Delete</button>
       </div>
     </div>
   </div>
