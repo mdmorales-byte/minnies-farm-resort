@@ -641,11 +641,20 @@
 
     /* ── MODAL ── */
     .modal-overlay {
-      position: fixed; inset: 0;
-      background: rgba(0,0,0,0.5);
-      display: flex; align-items: center; justify-content: center;
-      z-index: 200;
-      padding: 1rem;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.6);
+      backdrop-filter: blur(4px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 2000;
+      padding: 1.5rem;
+    }
+    [v-cloak] { display: none; }
+    .modal-overlay[style*="display: flex"],
+    .modal-overlay:not([style*="display: none"]) {
+        /* This is handled by Vue v-if, but we ensure it stays hidden otherwise */
     }
     .modal {
       background: var(--white);
